@@ -1,85 +1,97 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-
-export interface Question {
-  id: string;
-  roundName: string;
-  questionText: string;
-  options: { label: string; text: string }[];
-  correctAnswer: string;
-  points: number;
-  explanation?: string;
-}
-
-interface QuizState {
-  questions: Question[];
-  currentQuestionIndex: number;
-  currentSlide: 'home' | 'question' | 'complete';
-  score: number;
-  correctAnswers: number;
-  answerRevealed: boolean;
-  selectedAnswer: string | null;
-  isCorrect: boolean | null;
-  showCelebration: boolean;
-  timerRunning: boolean;
-  timeRemaining: number;
-}
+import { Question, Round, SlideType, QuizState } from '@/types/quiz';
 
 interface QuizContextType extends QuizState {
-  setQuestions: (questions: Question[]) => void;
-  selectAnswer: (answer: string) => void;
+  // Navigation
+  goToSlide: (slide: SlideType) => void;
+  selectRound: (index: number) => void;
   nextQuestion: () => void;
   previousQuestion: () => void;
-  goToSlide: (slide: QuizState['currentSlide']) => void;
+  
+  // Quiz actions
+  selectAnswer: (answer: string) => void;
+  continueAfterFeedback: () => void;
   resetQuestion: () => void;
   startQuiz: () => void;
   resetQuiz: () => void;
+  
+  // Timer
   startTimer: () => void;
   pauseTimer: () => void;
   resetTimer: (seconds?: number) => void;
   setTimeRemaining: (time: number) => void;
-  updateQuestion: (index: number, question: Question) => void;
+  
+  // Edit mode
+  toggleEditMode: () => void;
+  
+  // Round management
+  addRound: (round: Round) => void;
+  updateRound: (index: number, round: Round) => void;
+  deleteRound: (index: number) => void;
+  
+  // Question management
+  addQuestion: (roundIndex: number, question: Question) => void;
+  updateQuestion: (roundIndex: number, questionIndex: number, question: Question) => void;
+  deleteQuestion: (roundIndex: number, questionIndex: number) => void;
+  
+  // Getters
+  currentRound: Round | null;
+  currentQuestion: Question | null;
+  totalQuestions: number;
+  totalPoints: number;
 }
 
-const defaultQuestions: Question[] = [
+const defaultRounds: Round[] = [
   {
     id: '1',
-    roundName: 'Networking Basics',
-    questionText: 'Which protocol is specifically utilized for facilitating secure web browsing by encrypting the communication between the client\'s browser and the web server via SSL/TLS?',
-    options: [
-      { label: 'A', text: 'HTTP (Hypertext Transfer Protocol)' },
-      { label: 'B', text: 'FTP (File Transfer Protocol)' },
-      { label: 'C', text: 'HTTPS (Hypertext Transfer Protocol Secure)' },
-      { label: 'D', text: 'SSH (Secure Shell Protocol)' },
+    name: 'Round 1',
+    theme: 'Networking Basics',
+    questions: [
+      {
+        id: '1-1',
+        questionText: 'Which protocol is specifically utilized for facilitating secure web browsing by encrypting the communication between the client\'s browser and the web server via SSL/TLS?',
+        options: [
+          { label: 'A', text: 'HTTP (Hypertext Transfer Protocol)' },
+          { label: 'B', text: 'FTP (File Transfer Protocol)' },
+          { label: 'C', text: 'HTTPS (Hypertext Transfer Protocol Secure)' },
+          { label: 'D', text: 'SSH (Secure Shell Protocol)' },
+        ],
+        correctAnswer: 'C',
+        points: 10,
+        explanation: 'HTTPS is the correct standard for secure web communication.',
+      },
+      {
+        id: '1-2',
+        questionText: 'In the OSI model, which layer is responsible for routing data packets between different networks?',
+        options: [
+          { label: 'A', text: 'Data Link Layer (Layer 2)' },
+          { label: 'B', text: 'Network Layer (Layer 3)' },
+          { label: 'C', text: 'Transport Layer (Layer 4)' },
+          { label: 'D', text: 'Session Layer (Layer 5)' },
+        ],
+        correctAnswer: 'B',
+        points: 10,
+      },
     ],
-    correctAnswer: 'C',
-    points: 10,
-    explanation: 'HTTPS is the correct standard for secure web communication by wrapping HTTP in SSL/TLS encryption.',
   },
   {
     id: '2',
-    roundName: 'Networking Basics',
-    questionText: 'In the OSI model, which layer is responsible for routing data packets between different networks?',
-    options: [
-      { label: 'A', text: 'Data Link Layer (Layer 2)' },
-      { label: 'B', text: 'Network Layer (Layer 3)' },
-      { label: 'C', text: 'Transport Layer (Layer 4)' },
-      { label: 'D', text: 'Session Layer (Layer 5)' },
+    name: 'Round 2',
+    theme: 'Cybersecurity',
+    questions: [
+      {
+        id: '2-1',
+        questionText: 'What type of attack involves an attacker intercepting communication between two parties without their knowledge?',
+        options: [
+          { label: 'A', text: 'DDoS Attack' },
+          { label: 'B', text: 'Phishing Attack' },
+          { label: 'C', text: 'Man-in-the-Middle Attack' },
+          { label: 'D', text: 'SQL Injection' },
+        ],
+        correctAnswer: 'C',
+        points: 20,
+      },
     ],
-    correctAnswer: 'B',
-    points: 10,
-  },
-  {
-    id: '3',
-    roundName: 'Cybersecurity',
-    questionText: 'What type of attack involves an attacker intercepting communication between two parties without their knowledge?',
-    options: [
-      { label: 'A', text: 'DDoS Attack' },
-      { label: 'B', text: 'Phishing Attack' },
-      { label: 'C', text: 'Man-in-the-Middle Attack' },
-      { label: 'D', text: 'SQL Injection' },
-    ],
-    correctAnswer: 'C',
-    points: 20,
   },
 ];
 
@@ -94,9 +106,10 @@ export const useQuiz = () => {
 };
 
 export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [questions, setQuestions] = useState<Question[]>(defaultQuestions);
+  const [rounds, setRounds] = useState<Round[]>(defaultRounds);
+  const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [currentSlide, setCurrentSlide] = useState<QuizState['currentSlide']>('home');
+  const [currentSlide, setCurrentSlide] = useState<SlideType>('home');
   const [score, setScore] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [answerRevealed, setAnswerRevealed] = useState(false);
@@ -105,11 +118,35 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [showCelebration, setShowCelebration] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(60);
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // Computed values
+  const currentRound = rounds[currentRoundIndex] || null;
+  const currentQuestion = currentRound?.questions[currentQuestionIndex] || null;
+  const totalQuestions = rounds.reduce((sum, r) => sum + r.questions.length, 0);
+  const totalPoints = rounds.reduce((sum, r) => 
+    sum + r.questions.reduce((qSum, q) => qSum + q.points, 0), 0
+  );
+
+  const goToSlide = useCallback((slide: SlideType) => {
+    setCurrentSlide(slide);
+  }, []);
+
+  const selectRound = useCallback((index: number) => {
+    setCurrentRoundIndex(index);
+    setCurrentQuestionIndex(0);
+    setAnswerRevealed(false);
+    setSelectedAnswer(null);
+    setIsCorrect(null);
+    setTimeRemaining(60);
+    setTimerRunning(false);
+    setCurrentSlide('question');
+  }, []);
 
   const selectAnswer = useCallback((answer: string) => {
-    if (answerRevealed) return;
+    if (answerRevealed || !currentQuestion) return;
+    
     setSelectedAnswer(answer);
-    const currentQuestion = questions[currentQuestionIndex];
     const correct = answer === currentQuestion.correctAnswer;
     setIsCorrect(correct);
     setAnswerRevealed(true);
@@ -119,13 +156,57 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setScore(prev => prev + currentQuestion.points);
       setCorrectAnswers(prev => prev + 1);
       setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 2000);
     }
-  }, [answerRevealed, questions, currentQuestionIndex]);
+    
+    // Show feedback screen after a brief delay
+    setTimeout(() => {
+      setCurrentSlide(correct ? 'correct' : 'wrong');
+    }, 500);
+  }, [answerRevealed, currentQuestion]);
+
+  const continueAfterFeedback = useCallback(() => {
+    setShowCelebration(false);
+    
+    // Move to next question or complete
+    if (currentRound && currentQuestionIndex < currentRound.questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setAnswerRevealed(false);
+      setSelectedAnswer(null);
+      setIsCorrect(null);
+      setTimeRemaining(60);
+      setTimerRunning(false);
+      setCurrentSlide('question');
+    } else {
+      // Check if there are more rounds
+      if (currentRoundIndex < rounds.length - 1) {
+        setCurrentRoundIndex(prev => prev + 1);
+        setCurrentQuestionIndex(0);
+        setAnswerRevealed(false);
+        setSelectedAnswer(null);
+        setIsCorrect(null);
+        setTimeRemaining(60);
+        setTimerRunning(false);
+        setCurrentSlide('question');
+      } else {
+        setCurrentSlide('complete');
+      }
+    }
+  }, [currentRound, currentQuestionIndex, currentRoundIndex, rounds.length]);
 
   const nextQuestion = useCallback(() => {
-    if (currentQuestionIndex < questions.length - 1) {
+    if (!currentRound) return;
+    
+    if (currentQuestionIndex < currentRound.questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
+      setAnswerRevealed(false);
+      setSelectedAnswer(null);
+      setIsCorrect(null);
+      setShowCelebration(false);
+      setTimeRemaining(60);
+      setTimerRunning(false);
+    } else if (currentRoundIndex < rounds.length - 1) {
+      setCurrentRoundIndex(prev => prev + 1);
+      setCurrentQuestionIndex(0);
       setAnswerRevealed(false);
       setSelectedAnswer(null);
       setIsCorrect(null);
@@ -135,7 +216,7 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } else {
       setCurrentSlide('complete');
     }
-  }, [currentQuestionIndex, questions.length]);
+  }, [currentRound, currentQuestionIndex, currentRoundIndex, rounds.length]);
 
   const previousQuestion = useCallback(() => {
     if (currentQuestionIndex > 0) {
@@ -146,14 +227,21 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setShowCelebration(false);
       setTimeRemaining(60);
       setTimerRunning(false);
+    } else if (currentRoundIndex > 0) {
+      const prevRound = rounds[currentRoundIndex - 1];
+      setCurrentRoundIndex(prev => prev - 1);
+      setCurrentQuestionIndex(prevRound.questions.length - 1);
+      setAnswerRevealed(false);
+      setSelectedAnswer(null);
+      setIsCorrect(null);
+      setShowCelebration(false);
+      setTimeRemaining(60);
+      setTimerRunning(false);
     }
-  }, [currentQuestionIndex]);
-
-  const goToSlide = useCallback((slide: QuizState['currentSlide']) => {
-    setCurrentSlide(slide);
-  }, []);
+  }, [currentQuestionIndex, currentRoundIndex, rounds]);
 
   const startQuiz = useCallback(() => {
+    setCurrentRoundIndex(0);
     setCurrentQuestionIndex(0);
     setScore(0);
     setCorrectAnswers(0);
@@ -162,10 +250,11 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsCorrect(null);
     setTimeRemaining(60);
     setTimerRunning(false);
-    setCurrentSlide('question');
+    setCurrentSlide('rounds');
   }, []);
 
   const resetQuiz = useCallback(() => {
+    setCurrentRoundIndex(0);
     setCurrentQuestionIndex(0);
     setScore(0);
     setCorrectAnswers(0);
@@ -184,33 +273,80 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setShowCelebration(false);
     setTimeRemaining(60);
     setTimerRunning(false);
+    setCurrentSlide('question');
   }, []);
 
-  const startTimer = useCallback(() => {
-    setTimerRunning(true);
-  }, []);
-
-  const pauseTimer = useCallback(() => {
-    setTimerRunning(false);
-  }, []);
-
+  const startTimer = useCallback(() => setTimerRunning(true), []);
+  const pauseTimer = useCallback(() => setTimerRunning(false), []);
   const resetTimer = useCallback((seconds = 60) => {
     setTimeRemaining(seconds);
     setTimerRunning(false);
   }, []);
 
-  const updateQuestion = useCallback((index: number, question: Question) => {
-    setQuestions(prev => {
-      const newQuestions = [...prev];
-      newQuestions[index] = question;
-      return newQuestions;
+  const toggleEditMode = useCallback(() => {
+    setIsEditMode(prev => !prev);
+    if (!isEditMode) {
+      setCurrentSlide('editor');
+    } else {
+      setCurrentSlide('home');
+    }
+  }, [isEditMode]);
+
+  // Round management
+  const addRound = useCallback((round: Round) => {
+    setRounds(prev => [...prev, round]);
+  }, []);
+
+  const updateRound = useCallback((index: number, round: Round) => {
+    setRounds(prev => {
+      const newRounds = [...prev];
+      newRounds[index] = round;
+      return newRounds;
+    });
+  }, []);
+
+  const deleteRound = useCallback((index: number) => {
+    setRounds(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Question management
+  const addQuestion = useCallback((roundIndex: number, question: Question) => {
+    setRounds(prev => {
+      const newRounds = [...prev];
+      newRounds[roundIndex] = {
+        ...newRounds[roundIndex],
+        questions: [...newRounds[roundIndex].questions, question],
+      };
+      return newRounds;
+    });
+  }, []);
+
+  const updateQuestion = useCallback((roundIndex: number, questionIndex: number, question: Question) => {
+    setRounds(prev => {
+      const newRounds = [...prev];
+      const newQuestions = [...newRounds[roundIndex].questions];
+      newQuestions[questionIndex] = question;
+      newRounds[roundIndex] = { ...newRounds[roundIndex], questions: newQuestions };
+      return newRounds;
+    });
+  }, []);
+
+  const deleteQuestion = useCallback((roundIndex: number, questionIndex: number) => {
+    setRounds(prev => {
+      const newRounds = [...prev];
+      newRounds[roundIndex] = {
+        ...newRounds[roundIndex],
+        questions: newRounds[roundIndex].questions.filter((_, i) => i !== questionIndex),
+      };
+      return newRounds;
     });
   }, []);
 
   return (
     <QuizContext.Provider
       value={{
-        questions,
+        rounds,
+        currentRoundIndex,
         currentQuestionIndex,
         currentSlide,
         score,
@@ -221,11 +357,17 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showCelebration,
         timerRunning,
         timeRemaining,
-        setQuestions,
+        isEditMode,
+        currentRound,
+        currentQuestion,
+        totalQuestions,
+        totalPoints,
+        goToSlide,
+        selectRound,
         selectAnswer,
+        continueAfterFeedback,
         nextQuestion,
         previousQuestion,
-        goToSlide,
         resetQuestion,
         startQuiz,
         resetQuiz,
@@ -233,7 +375,13 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         pauseTimer,
         resetTimer,
         setTimeRemaining,
+        toggleEditMode,
+        addRound,
+        updateRound,
+        deleteRound,
+        addQuestion,
         updateQuestion,
+        deleteQuestion,
       }}
     >
       {children}

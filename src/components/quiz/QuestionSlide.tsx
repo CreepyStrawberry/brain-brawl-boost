@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useQuiz } from '@/context/QuizContext';
 import SlideLayout from './SlideLayout';
 import Timer from './Timer';
@@ -6,12 +6,15 @@ import OptionButton from './OptionButton';
 import Confetti from './Confetti';
 import ScorePopup from './ScorePopup';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, RotateCcw, Home } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Home, LayoutGrid } from 'lucide-react';
 
 const QuestionSlide: React.FC = () => {
   const {
-    questions,
+    rounds,
+    currentRoundIndex,
     currentQuestionIndex,
+    currentRound,
+    currentQuestion,
     selectedAnswer,
     answerRevealed,
     isCorrect,
@@ -22,9 +25,24 @@ const QuestionSlide: React.FC = () => {
     previousQuestion,
     resetQuestion,
     resetQuiz,
+    goToSlide,
   } = useQuiz();
 
-  const currentQuestion = questions[currentQuestionIndex];
+  if (!currentRound || !currentQuestion) {
+    return (
+      <SlideLayout>
+        <div className="flex flex-1 items-center justify-center">
+          <p className="text-muted-foreground">No questions available</p>
+        </div>
+      </SlideLayout>
+    );
+  }
+
+  const totalQuestionsInRound = currentRound.questions.length;
+  const overallQuestionNumber = rounds
+    .slice(0, currentRoundIndex)
+    .reduce((sum, r) => sum + r.questions.length, 0) + currentQuestionIndex + 1;
+  const totalQuestions = rounds.reduce((sum, r) => sum + r.questions.length, 0);
 
   return (
     <SlideLayout>
@@ -36,9 +54,9 @@ const QuestionSlide: React.FC = () => {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="cyber-border bg-card/50 px-4 py-2 lg:px-6 lg:py-3">
             <h2 className="font-display text-lg uppercase tracking-wider text-primary lg:text-xl">
-              Question {currentQuestionIndex + 1} of {questions.length}
+              {currentRound.name}: Question {currentQuestionIndex + 1} of {totalQuestionsInRound}
             </h2>
-            <p className="font-body text-sm text-muted-foreground">{currentQuestion.roundName}</p>
+            <p className="font-body text-sm text-muted-foreground">{currentRound.theme}</p>
           </div>
           
           <div className="flex items-center gap-4">
@@ -110,6 +128,15 @@ const QuestionSlide: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => goToSlide('rounds')}
+              className="border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
+            >
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              Rounds
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={resetQuestion}
               className="border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
             >
@@ -117,12 +144,17 @@ const QuestionSlide: React.FC = () => {
             </Button>
           </div>
 
+          {/* Progress indicator */}
+          <div className="font-body text-sm text-muted-foreground">
+            Overall: {overallQuestionNumber} / {totalQuestions}
+          </div>
+
           {/* Navigation controls */}
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               onClick={previousQuestion}
-              disabled={currentQuestionIndex === 0}
+              disabled={currentRoundIndex === 0 && currentQuestionIndex === 0}
               className="border-muted-foreground/30 px-4 text-muted-foreground hover:border-primary hover:text-primary disabled:opacity-30"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -131,7 +163,7 @@ const QuestionSlide: React.FC = () => {
               onClick={nextQuestion}
               className="border-2 border-primary bg-primary/10 px-6 font-display uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
             >
-              {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Next'}
+              {currentRoundIndex === rounds.length - 1 && currentQuestionIndex === totalQuestionsInRound - 1 ? 'Finish' : 'Next'}
               <ChevronRight className="ml-2 h-5 w-5" />
             </Button>
           </div>

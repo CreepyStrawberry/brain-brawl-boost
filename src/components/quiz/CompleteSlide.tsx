@@ -6,11 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Trophy, RotateCcw, CheckCircle, XCircle } from 'lucide-react';
 
 const CompleteSlide: React.FC = () => {
-  const { score, correctAnswers, questions, resetQuiz } = useQuiz();
+  const { score, correctAnswers, totalQuestions, totalPoints, resetQuiz } = useQuiz();
   const [showConfetti, setShowConfetti] = useState(true);
 
-  const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
-  const percentage = Math.round((score / totalPoints) * 100);
+  const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
 
   useEffect(() => {
     const timer = setTimeout(() => setShowConfetti(false), 4000);
@@ -66,7 +65,7 @@ const CompleteSlide: React.FC = () => {
           <div className="flex items-center gap-3">
             <XCircle className="h-8 w-8 text-destructive" />
             <div>
-              <span className="font-display text-2xl font-bold text-destructive">{questions.length - correctAnswers}</span>
+              <span className="font-display text-2xl font-bold text-destructive">{totalQuestions - correctAnswers}</span>
               <span className="ml-2 font-body text-muted-foreground">Incorrect</span>
             </div>
           </div>
