@@ -9,73 +9,58 @@ const RoundSelectionSlide: React.FC = () => {
 
   return (
     <SlideLayout>
-      <div className="flex flex-1 flex-col px-6 py-8 lg:px-12">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-6">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="cyber-text-glow font-display text-3xl font-bold uppercase text-primary lg:text-4xl">
-              Select Round
-            </h1>
-            <p className="mt-1 font-body text-muted-foreground">
-              Choose a round to begin
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={resetQuiz}
-            className="border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
-          >
-            <Home className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
+        <div className="mb-6 text-center">
+          <h1 className="cyber-text-glow font-display text-2xl font-bold uppercase text-primary">
+            Select Round
+          </h1>
         </div>
 
-        {/* Rounds grid */}
-        <div className="grid flex-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Compact rounds list */}
+        <div className="w-full max-w-md space-y-2">
           {rounds.map((round, index) => (
             <button
               key={round.id}
               onClick={() => selectRound(index)}
-              className="group cyber-border flex flex-col bg-card/60 p-6 text-left transition-all hover:bg-card/80 hover:border-primary"
+              className="group cyber-border flex w-full items-center justify-between bg-card/60 px-4 py-3 text-left transition-all hover:bg-card/80 hover:border-primary"
             >
-              <div className="mb-4 flex items-center justify-between">
-                <span className="font-display text-sm uppercase tracking-wider text-muted-foreground">
-                  Round {index + 1}
+              <div className="flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center border border-primary/50 bg-primary/10 font-display text-sm font-bold text-primary">
+                  {index + 1}
                 </span>
-                <Play className="h-5 w-5 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
-              </div>
-              
-              <h3 className="mb-2 font-display text-xl font-bold text-foreground">
-                {round.name}
-              </h3>
-              
-              <p className="mb-4 font-body text-accent">
-                {round.theme}
-              </p>
-              
-              <div className="mt-auto flex items-center gap-4 pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-body text-sm text-muted-foreground">
-                    {round.questions.length} questions
-                  </span>
+                <div>
+                  <h3 className="font-display text-sm font-bold text-foreground">
+                    {round.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {round.theme} • {round.questions.length} Q
+                  </p>
                 </div>
-                <span className="font-body text-sm text-muted-foreground">
-                  {round.questions.reduce((sum, q) => sum + q.points, 0)} pts
-                </span>
               </div>
+              <Play className="h-4 w-4 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
             </button>
           ))}
         </div>
 
-        {/* Play all button */}
-        <div className="mt-8 flex justify-center">
+        {/* Action buttons */}
+        <div className="mt-6 flex gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={resetQuiz}
+            className="border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Home
+          </Button>
           <Button
             onClick={() => selectRound(0)}
-            className="border-2 border-primary bg-primary/10 px-10 py-6 font-display text-lg uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
+            size="sm"
+            className="border border-primary bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground"
           >
-            <Play className="mr-3 h-5 w-5" />
-            Play All Rounds
+            <Play className="mr-2 h-4 w-4" />
+            Play All
           </Button>
         </div>
       </div>

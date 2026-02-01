@@ -41,6 +41,8 @@ interface QuizContextType extends QuizState {
   totalPoints: number;
 }
 
+const STORAGE_KEY = 'quiz-rounds-data';
+
 const defaultRounds: Round[] = [
   {
     id: '1',
@@ -95,6 +97,26 @@ const defaultRounds: Round[] = [
   },
 ];
 
+const loadRoundsFromStorage = (): Round[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Failed to load rounds from storage:', e);
+  }
+  return defaultRounds;
+};
+
+const saveRoundsToStorage = (rounds: Round[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(rounds));
+  } catch (e) {
+    console.error('Failed to save rounds to storage:', e);
+  }
+};
+
 const QuizContext = createContext<QuizContextType | null>(null);
 
 export const useQuiz = () => {
@@ -106,7 +128,7 @@ export const useQuiz = () => {
 };
 
 export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [rounds, setRounds] = useState<Round[]>(defaultRounds);
+  const [rounds, setRounds] = useState<Round[]>(() => loadRoundsFromStorage());
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [currentSlide, setCurrentSlide] = useState<SlideType>('home');
@@ -294,19 +316,28 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Round management
   const addRound = useCallback((round: Round) => {
-    setRounds(prev => [...prev, round]);
+    setRounds(prev => {
+      const newRounds = [...prev, round];
+      saveRoundsToStorage(newRounds);
+      return newRounds;
+    });
   }, []);
 
   const updateRound = useCallback((index: number, round: Round) => {
     setRounds(prev => {
       const newRounds = [...prev];
       newRounds[index] = round;
+      saveRoundsToStorage(newRounds);
       return newRounds;
     });
   }, []);
 
   const deleteRound = useCallback((index: number) => {
-    setRounds(prev => prev.filter((_, i) => i !== index));
+    setRounds(prev => {
+      const newRounds = prev.filter((_, i) => i !== index);
+      saveRoundsToStorage(newRounds);
+      return newRounds;
+    });
   }, []);
 
   // Question management
@@ -317,6 +348,7 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ...newRounds[roundIndex],
         questions: [...newRounds[roundIndex].questions, question],
       };
+      saveRoundsToStorage(newRounds);
       return newRounds;
     });
   }, []);
@@ -327,6 +359,7 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const newQuestions = [...newRounds[roundIndex].questions];
       newQuestions[questionIndex] = question;
       newRounds[roundIndex] = { ...newRounds[roundIndex], questions: newQuestions };
+      saveRoundsToStorage(newRounds);
       return newRounds;
     });
   }, []);
@@ -338,6 +371,7 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ...newRounds[roundIndex],
         questions: newRounds[roundIndex].questions.filter((_, i) => i !== questionIndex),
       };
+      saveRoundsToStorage(newRounds);
       return newRounds;
     });
   }, []);
