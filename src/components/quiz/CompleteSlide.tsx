@@ -3,119 +3,83 @@ import { useQuiz } from '@/context/QuizContext';
 import SlideLayout from './SlideLayout';
 import Confetti from './Confetti';
 import { Button } from '@/components/ui/button';
-import { Trophy, RotateCcw } from 'lucide-react';
+import { Trophy, RotateCcw, CheckCircle, XCircle } from 'lucide-react';
 
 const CompleteSlide: React.FC = () => {
-  const { teams, goToSlide } = useQuiz();
+  const { score, correctAnswers, questions, resetQuiz } = useQuiz();
   const [showConfetti, setShowConfetti] = useState(true);
 
-  const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
-  const winner = sortedTeams[0];
+  const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
+  const percentage = Math.round((score / totalPoints) * 100);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowConfetti(false), 5000);
+    const timer = setTimeout(() => setShowConfetti(false), 4000);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleRestart = () => {
-    window.location.reload();
+  const getMessage = () => {
+    if (percentage >= 90) return { text: 'Outstanding!', color: 'text-success' };
+    if (percentage >= 70) return { text: 'Great Job!', color: 'text-primary' };
+    if (percentage >= 50) return { text: 'Good Effort!', color: 'text-accent' };
+    return { text: 'Keep Learning!', color: 'text-warning' };
   };
+
+  const message = getMessage();
 
   return (
     <SlideLayout>
-      <Confetti show={showConfetti} />
+      <Confetti show={showConfetti && percentage >= 50} />
       
-      <div className="flex flex-1 flex-col items-center justify-center px-8 py-12">
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+        {/* Trophy icon */}
+        <Trophy className="mb-6 h-20 w-20 text-warning animate-pulse-glow" />
+        
         {/* Title */}
-        <h1 className="cyber-text-glow mb-4 text-center font-display text-5xl font-black uppercase text-primary md:text-7xl">
+        <h1 className="cyber-text-glow mb-2 text-center font-display text-4xl font-black uppercase text-primary md:text-6xl">
           Quiz Complete
         </h1>
         
-        <h2 className="mb-12 text-center font-display text-2xl uppercase tracking-widest text-foreground/80">
-          System Shutdown & Winner Declaration
+        <h2 className={`mb-10 text-center font-display text-2xl uppercase tracking-widest ${message.color}`}>
+          {message.text}
         </h2>
 
-        {/* Winner announcement */}
-        <div className="mb-12 flex flex-col items-center">
-          <div className="mb-6 flex items-center gap-4">
-            <Trophy className="h-16 w-16 text-warning animate-pulse-glow" />
-          </div>
-          
-          <p className="mb-2 font-display text-xl uppercase tracking-widest text-muted-foreground">
-            Champion
-          </p>
-          
-          <h3 
-            className="mb-4 font-display text-5xl font-black md:text-6xl"
-            style={{ color: winner.color, textShadow: `0 0 30px ${winner.color}` }}
-          >
-            {winner.name}
-          </h3>
-          
+        {/* Score display */}
+        <div className="mb-10 flex flex-col items-center rounded-lg border-2 border-primary bg-card/60 p-8">
+          <span className="mb-2 font-body text-lg text-muted-foreground">Your Score</span>
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-6xl font-black text-primary">{winner.score}</span>
-            <span className="font-display text-2xl text-muted-foreground">points</span>
+            <span className="cyber-text-glow font-display text-7xl font-black text-primary">{score}</span>
+            <span className="font-display text-2xl text-muted-foreground">/ {totalPoints}</span>
           </div>
+          <span className="mt-2 font-display text-xl text-accent">{percentage}%</span>
         </div>
 
-        {/* Final standings */}
-        <div className="mb-12 w-full max-w-2xl">
-          <h4 className="mb-4 text-center font-display text-lg uppercase tracking-wider text-muted-foreground">
-            Final Standings
-          </h4>
-          
-          <div className="space-y-3">
-            {sortedTeams.map((team, index) => (
-              <div
-                key={team.id}
-                className="flex items-center gap-4 rounded border border-border bg-card/50 p-4"
-              >
-                <span className="font-display text-2xl font-bold text-muted-foreground">
-                  #{index + 1}
-                </span>
-                <div 
-                  className="h-4 w-4 rounded-full"
-                  style={{ backgroundColor: team.color, boxShadow: `0 0 10px ${team.color}` }}
-                />
-                <span className="flex-1 font-display text-xl text-foreground">{team.name}</span>
-                <span className="font-display text-2xl font-bold text-primary">{team.score} pts</span>
-              </div>
-            ))}
+        {/* Stats */}
+        <div className="mb-10 flex items-center gap-8">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="h-8 w-8 text-success" />
+            <div>
+              <span className="font-display text-2xl font-bold text-success">{correctAnswers}</span>
+              <span className="ml-2 font-body text-muted-foreground">Correct</span>
+            </div>
+          </div>
+          <div className="h-10 w-px bg-border" />
+          <div className="flex items-center gap-3">
+            <XCircle className="h-8 w-8 text-destructive" />
+            <div>
+              <span className="font-display text-2xl font-bold text-destructive">{questions.length - correctAnswers}</span>
+              <span className="ml-2 font-body text-muted-foreground">Incorrect</span>
+            </div>
           </div>
         </div>
-
-        {/* Closing message */}
-        <p className="mb-8 max-w-2xl text-center font-body text-lg text-muted-foreground">
-          The final packet has been transmitted and the data stream is now closing. 
-          We have witnessed an extraordinary display of technical acumen and rapid-fire problem solving. 
-          The champions will now be heralded as the architects of tomorrow.
-        </p>
 
         {/* Actions */}
-        <div className="flex gap-4">
-          <Button
-            onClick={handleRestart}
-            className="border-2 border-primary bg-primary/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
-          >
-            <RotateCcw className="mr-2 h-5 w-5" />
-            New Quiz
-          </Button>
-          
-          <Button
-            variant="outline"
-            onClick={() => goToSlide('scoreboard')}
-            className="border-2 border-muted-foreground/30 px-8 py-6 font-display text-lg uppercase tracking-wider text-muted-foreground hover:border-accent hover:text-accent"
-          >
-            View Scoreboard
-          </Button>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-auto pt-12">
-          <p className="text-center font-body text-sm text-muted-foreground/50">
-            © 2026 IT Tech Quiz. All Rights Reserved. Powered by Tomorrow's Architects.
-          </p>
-        </div>
+        <Button
+          onClick={resetQuiz}
+          className="border-2 border-primary bg-primary/10 px-10 py-6 font-display text-lg uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
+        >
+          <RotateCcw className="mr-3 h-5 w-5" />
+          Try Again
+        </Button>
       </div>
     </SlideLayout>
   );
