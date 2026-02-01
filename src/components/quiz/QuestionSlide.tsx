@@ -5,9 +5,8 @@ import Timer from './Timer';
 import OptionButton from './OptionButton';
 import Confetti from './Confetti';
 import ScorePopup from './ScorePopup';
-import MiniScoreboard from './MiniScoreboard';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, RotateCcw, LayoutGrid } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Home } from 'lucide-react';
 
 const QuestionSlide: React.FC = () => {
   const {
@@ -17,22 +16,15 @@ const QuestionSlide: React.FC = () => {
     answerRevealed,
     isCorrect,
     showCelebration,
+    score,
     selectAnswer,
     nextQuestion,
     previousQuestion,
     resetQuestion,
-    goToSlide,
-    addPoints,
-    selectedTeam,
+    resetQuiz,
   } = useQuiz();
 
   const currentQuestion = questions[currentQuestionIndex];
-
-  useEffect(() => {
-    if (isCorrect && selectedTeam) {
-      addPoints();
-    }
-  }, [isCorrect, selectedTeam, addPoints]);
 
   return (
     <SlideLayout>
@@ -50,8 +42,12 @@ const QuestionSlide: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-4">
+            <div className="border-2 border-muted bg-muted/20 px-4 py-2">
+              <span className="font-body text-sm text-muted-foreground">Score: </span>
+              <span className="font-display text-xl font-bold text-primary">{score}</span>
+            </div>
             <div className="border-2 border-accent bg-accent/10 px-4 py-2">
-              <span className="font-display text-lg font-bold text-accent">{currentQuestion.points} pts</span>
+              <span className="font-display text-lg font-bold text-accent">+{currentQuestion.points} pts</span>
             </div>
           </div>
         </div>
@@ -79,7 +75,7 @@ const QuestionSlide: React.FC = () => {
                   isRevealed={answerRevealed}
                   correctAnswer={currentQuestion.correctAnswer}
                   onClick={() => selectAnswer(option.label)}
-                  disabled={answerRevealed || !selectedTeam}
+                  disabled={answerRevealed}
                 />
               ))}
             </div>
@@ -100,16 +96,17 @@ const QuestionSlide: React.FC = () => {
 
         {/* Bottom bar */}
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
-          {/* Team selector */}
-          <div className="flex-1">
-            <p className="mb-2 font-body text-xs uppercase tracking-wider text-muted-foreground">
-              Select answering team:
-            </p>
-            <MiniScoreboard />
-          </div>
-
-          {/* Navigation controls */}
+          {/* Left controls */}
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetQuiz}
+              className="border-muted-foreground/30 text-muted-foreground hover:border-destructive hover:text-destructive"
+            >
+              <Home className="mr-2 h-4 w-4" />
+              Exit
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -118,14 +115,10 @@ const QuestionSlide: React.FC = () => {
             >
               <RotateCcw className="h-4 w-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => goToSlide('scoreboard')}
-              className="border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
+          </div>
+
+          {/* Navigation controls */}
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               onClick={previousQuestion}

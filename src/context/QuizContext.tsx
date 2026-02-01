@@ -10,19 +10,12 @@ export interface Question {
   explanation?: string;
 }
 
-export interface Team {
-  id: string;
-  name: string;
-  score: number;
-  color: string;
-}
-
 interface QuizState {
   questions: Question[];
-  teams: Team[];
   currentQuestionIndex: number;
-  currentSlide: 'cover' | 'round-intro' | 'question' | 'scoreboard' | 'complete';
-  selectedTeam: string | null;
+  currentSlide: 'home' | 'question' | 'complete';
+  score: number;
+  correctAnswers: number;
   answerRevealed: boolean;
   selectedAnswer: string | null;
   isCorrect: boolean | null;
@@ -33,29 +26,25 @@ interface QuizState {
 
 interface QuizContextType extends QuizState {
   setQuestions: (questions: Question[]) => void;
-  setTeams: (teams: Team[]) => void;
-  selectTeam: (teamId: string) => void;
   selectAnswer: (answer: string) => void;
-  revealAnswer: () => void;
   nextQuestion: () => void;
   previousQuestion: () => void;
   goToSlide: (slide: QuizState['currentSlide']) => void;
   resetQuestion: () => void;
-  updateTeamScore: (teamId: string, points: number) => void;
+  startQuiz: () => void;
+  resetQuiz: () => void;
   startTimer: () => void;
   pauseTimer: () => void;
   resetTimer: (seconds?: number) => void;
   setTimeRemaining: (time: number) => void;
-  addPoints: () => void;
   updateQuestion: (index: number, question: Question) => void;
-  updateTeamName: (teamId: string, name: string) => void;
 }
 
 const defaultQuestions: Question[] = [
   {
     id: '1',
-    roundName: 'Round 1: Networking Basics',
-    questionText: 'Which protocol is specifically utilized for facilitating secure web browsing by encrypting the communication between the client\'s browser and the web server via SSL/TLS? This protocol operates primarily on port 443.',
+    roundName: 'Networking Basics',
+    questionText: 'Which protocol is specifically utilized for facilitating secure web browsing by encrypting the communication between the client\'s browser and the web server via SSL/TLS?',
     options: [
       { label: 'A', text: 'HTTP (Hypertext Transfer Protocol)' },
       { label: 'B', text: 'FTP (File Transfer Protocol)' },
@@ -68,7 +57,7 @@ const defaultQuestions: Question[] = [
   },
   {
     id: '2',
-    roundName: 'Round 1: Networking Basics',
+    roundName: 'Networking Basics',
     questionText: 'In the OSI model, which layer is responsible for routing data packets between different networks?',
     options: [
       { label: 'A', text: 'Data Link Layer (Layer 2)' },
@@ -81,7 +70,7 @@ const defaultQuestions: Question[] = [
   },
   {
     id: '3',
-    roundName: 'Round 2: Cybersecurity',
+    roundName: 'Cybersecurity',
     questionText: 'What type of attack involves an attacker intercepting communication between two parties without their knowledge?',
     options: [
       { label: 'A', text: 'DDoS Attack' },
@@ -92,13 +81,6 @@ const defaultQuestions: Question[] = [
     correctAnswer: 'C',
     points: 20,
   },
-];
-
-const defaultTeams: Team[] = [
-  { id: '1', name: 'Team Alpha', score: 0, color: 'hsl(180, 100%, 50%)' },
-  { id: '2', name: 'Team Beta', score: 0, color: 'hsl(150, 85%, 45%)' },
-  { id: '3', name: 'Team Gamma', score: 0, color: 'hsl(45, 100%, 55%)' },
-  { id: '4', name: 'Team Delta', score: 0, color: 'hsl(280, 80%, 60%)' },
 ];
 
 const QuizContext = createContext<QuizContextType | null>(null);
@@ -113,20 +95,16 @@ export const useQuiz = () => {
 
 export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [questions, setQuestions] = useState<Question[]>(defaultQuestions);
-  const [teams, setTeams] = useState<Team[]>(defaultTeams);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [currentSlide, setCurrentSlide] = useState<QuizState['currentSlide']>('cover');
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [currentSlide, setCurrentSlide] = useState<QuizState['currentSlide']>('home');
+  const [score, setScore] = useState(0);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
   const [answerRevealed, setAnswerRevealed] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(60);
-
-  const selectTeam = useCallback((teamId: string) => {
-    setSelectedTeam(teamId);
-  }, []);
 
   const selectAnswer = useCallback((answer: string) => {
     if (answerRevealed) return;
@@ -138,26 +116,12 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setTimerRunning(false);
     
     if (correct) {
+      setScore(prev => prev + currentQuestion.points);
+      setCorrectAnswers(prev => prev + 1);
       setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 3000);
+      setTimeout(() => setShowCelebration(false), 2000);
     }
   }, [answerRevealed, questions, currentQuestionIndex]);
-
-  const addPoints = useCallback(() => {
-    if (selectedTeam && isCorrect) {
-      const currentQuestion = questions[currentQuestionIndex];
-      setTeams(prev => prev.map(team => 
-        team.id === selectedTeam 
-          ? { ...team, score: team.score + currentQuestion.points }
-          : team
-      ));
-    }
-  }, [selectedTeam, isCorrect, questions, currentQuestionIndex]);
-
-  const revealAnswer = useCallback(() => {
-    setAnswerRevealed(true);
-    setTimerRunning(false);
-  }, []);
 
   const nextQuestion = useCallback(() => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -187,13 +151,30 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const goToSlide = useCallback((slide: QuizState['currentSlide']) => {
     setCurrentSlide(slide);
-    if (slide === 'question') {
-      setAnswerRevealed(false);
-      setSelectedAnswer(null);
-      setIsCorrect(null);
-      setTimeRemaining(60);
-      setTimerRunning(false);
-    }
+  }, []);
+
+  const startQuiz = useCallback(() => {
+    setCurrentQuestionIndex(0);
+    setScore(0);
+    setCorrectAnswers(0);
+    setAnswerRevealed(false);
+    setSelectedAnswer(null);
+    setIsCorrect(null);
+    setTimeRemaining(60);
+    setTimerRunning(false);
+    setCurrentSlide('question');
+  }, []);
+
+  const resetQuiz = useCallback(() => {
+    setCurrentQuestionIndex(0);
+    setScore(0);
+    setCorrectAnswers(0);
+    setAnswerRevealed(false);
+    setSelectedAnswer(null);
+    setIsCorrect(null);
+    setTimeRemaining(60);
+    setTimerRunning(false);
+    setCurrentSlide('home');
   }, []);
 
   const resetQuestion = useCallback(() => {
@@ -203,12 +184,6 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setShowCelebration(false);
     setTimeRemaining(60);
     setTimerRunning(false);
-  }, []);
-
-  const updateTeamScore = useCallback((teamId: string, points: number) => {
-    setTeams(prev => prev.map(team =>
-      team.id === teamId ? { ...team, score: team.score + points } : team
-    ));
   }, []);
 
   const startTimer = useCallback(() => {
@@ -232,20 +207,14 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   }, []);
 
-  const updateTeamName = useCallback((teamId: string, name: string) => {
-    setTeams(prev => prev.map(team =>
-      team.id === teamId ? { ...team, name } : team
-    ));
-  }, []);
-
   return (
     <QuizContext.Provider
       value={{
         questions,
-        teams,
         currentQuestionIndex,
         currentSlide,
-        selectedTeam,
+        score,
+        correctAnswers,
         answerRevealed,
         selectedAnswer,
         isCorrect,
@@ -253,22 +222,18 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         timerRunning,
         timeRemaining,
         setQuestions,
-        setTeams,
-        selectTeam,
         selectAnswer,
-        revealAnswer,
         nextQuestion,
         previousQuestion,
         goToSlide,
         resetQuestion,
-        updateTeamScore,
+        startQuiz,
+        resetQuiz,
         startTimer,
         pauseTimer,
         resetTimer,
         setTimeRemaining,
-        addPoints,
         updateQuestion,
-        updateTeamName,
       }}
     >
       {children}
