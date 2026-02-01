@@ -1,8 +1,11 @@
 import React from 'react';
 import { useQuiz } from '@/context/QuizContext';
 import HomeSlide from './HomeSlide';
+import RoundSelectionSlide from './RoundSelectionSlide';
 import QuestionSlide from './QuestionSlide';
+import FeedbackSlide from './FeedbackSlide';
 import CompleteSlide from './CompleteSlide';
+import QuizEditor from './editor/QuizEditor';
 
 const QuizPresentation: React.FC = () => {
   const { currentSlide } = useQuiz();
@@ -10,10 +13,18 @@ const QuizPresentation: React.FC = () => {
   switch (currentSlide) {
     case 'home':
       return <HomeSlide />;
+    case 'rounds':
+      return <RoundSelectionSlide />;
     case 'question':
       return <QuestionSlide />;
+    case 'correct':
+      return <FeedbackSlide type="correct" />;
+    case 'wrong':
+      return <FeedbackSlide type="wrong" />;
     case 'complete':
       return <CompleteSlide />;
+    case 'editor':
+      return <QuizEditor />;
     default:
       return <HomeSlide />;
   }
