@@ -1,5 +1,6 @@
 import React from 'react';
 import circuitBg from '@/assets/circuit-bg.jpg';
+import BackgroundParticles from './BackgroundParticles';
 
 interface SlideLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ const SlideLayout: React.FC<SlideLayoutProps> = ({ children }) => {
       style={{ backgroundImage: `url(${circuitBg})` }}
     >
       <div className="slide-overlay" />
+      <BackgroundParticles />
       <div className="scanline" />
       <div className="relative z-10 flex min-h-screen flex-col">
         {children}

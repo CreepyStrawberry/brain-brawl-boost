@@ -3,10 +3,11 @@ import { useQuiz } from '@/context/QuizContext';
 import SlideLayout from './SlideLayout';
 import Confetti from './Confetti';
 import { Button } from '@/components/ui/button';
-import { Trophy, RotateCcw, CheckCircle, XCircle } from 'lucide-react';
+import { Trophy, RotateCcw, CheckCircle, XCircle, LayoutGrid } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const CompleteSlide: React.FC = () => {
-  const { score, correctAnswers, totalQuestions, totalPoints, resetQuiz } = useQuiz();
+  const { score, correctAnswers, totalQuestions, totalPoints, resetQuiz, goToSlide } = useQuiz();
   const [showConfetti, setShowConfetti] = useState(true);
 
   const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
@@ -25,35 +26,99 @@ const CompleteSlide: React.FC = () => {
 
   const message = getMessage();
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const }
+    },
+  };
+
   return (
     <SlideLayout>
       <Confetti show={showConfetti && percentage >= 50} />
       
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+      <motion.div 
+        className="flex flex-1 flex-col items-center justify-center px-6 py-12"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Trophy icon */}
-        <Trophy className="mb-6 h-20 w-20 text-warning animate-pulse-glow" />
+        <motion.div variants={itemVariants}>
+          <motion.div
+            animate={{ 
+              y: [0, -10, 0],
+              rotate: [0, 5, -5, 0],
+            }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              ease: 'easeInOut' 
+            }}
+          >
+            <Trophy className="mb-6 h-20 w-20 text-warning" />
+          </motion.div>
+        </motion.div>
         
         {/* Title */}
-        <h1 className="cyber-text-glow mb-2 text-center font-display text-4xl font-black uppercase text-primary md:text-6xl">
+        <motion.h1 
+          className="cyber-text-glow mb-2 text-center font-display text-4xl font-black uppercase text-primary md:text-6xl"
+          variants={itemVariants}
+        >
           Quiz Complete
-        </h1>
+        </motion.h1>
         
-        <h2 className={`mb-10 text-center font-display text-2xl uppercase tracking-widest ${message.color}`}>
+        <motion.h2 
+          className={`mb-10 text-center font-display text-2xl uppercase tracking-widest ${message.color}`}
+          variants={itemVariants}
+        >
           {message.text}
-        </h2>
+        </motion.h2>
 
         {/* Score display */}
-        <div className="mb-10 flex flex-col items-center rounded-lg border-2 border-primary bg-card/60 p-8">
+        <motion.div 
+          className="mb-10 flex flex-col items-center rounded-lg border-2 border-primary bg-card/60 p-8"
+          variants={itemVariants}
+        >
           <span className="mb-2 font-body text-lg text-muted-foreground">Your Score</span>
           <div className="flex items-baseline gap-2">
-            <span className="cyber-text-glow font-display text-7xl font-black text-primary">{score}</span>
+            <motion.span 
+              className="cyber-text-glow font-display text-7xl font-black text-primary"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 10, delay: 0.5 }}
+            >
+              {score}
+            </motion.span>
             <span className="font-display text-2xl text-muted-foreground">/ {totalPoints}</span>
           </div>
-          <span className="mt-2 font-display text-xl text-accent">{percentage}%</span>
-        </div>
+          <motion.span 
+            className="mt-2 font-display text-xl text-accent"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+          >
+            {percentage}%
+          </motion.span>
+        </motion.div>
 
         {/* Stats */}
-        <div className="mb-10 flex items-center gap-8">
+        <motion.div 
+          className="mb-10 flex items-center gap-8"
+          variants={itemVariants}
+        >
           <div className="flex items-center gap-3">
             <CheckCircle className="h-8 w-8 text-success" />
             <div>
@@ -69,17 +134,34 @@ const CompleteSlide: React.FC = () => {
               <span className="ml-2 font-body text-muted-foreground">Incorrect</span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Actions */}
-        <Button
-          onClick={resetQuiz}
-          className="border-2 border-primary bg-primary/10 px-10 py-6 font-display text-lg uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
+        <motion.div 
+          className="flex flex-wrap items-center justify-center gap-4"
+          variants={itemVariants}
         >
-          <RotateCcw className="mr-3 h-5 w-5" />
-          Try Again
-        </Button>
-      </div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              onClick={() => goToSlide('rounds')}
+              variant="outline"
+              className="border-2 border-muted-foreground/30 px-8 py-6 font-display text-lg uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary"
+            >
+              <LayoutGrid className="mr-3 h-5 w-5" />
+              Round Selection
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              onClick={resetQuiz}
+              className="border-2 border-primary bg-primary/10 px-10 py-6 font-display text-lg uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
+            >
+              <RotateCcw className="mr-3 h-5 w-5" />
+              Try Again
+            </Button>
+          </motion.div>
+        </motion.div>
+      </motion.div>
     </SlideLayout>
   );
 };
