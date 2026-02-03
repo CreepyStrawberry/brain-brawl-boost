@@ -3,6 +3,14 @@ export interface QuizOption {
   text: string;
 }
 
+export type QuestionType = 'normal' | 'media';
+
+export interface MediaAttachment {
+  url: string;
+  type: 'image' | 'audio' | 'video';
+  isBlurred?: boolean; // For initial blurred image
+}
+
 export interface Question {
   id: string;
   questionText: string;
@@ -10,6 +18,9 @@ export interface Question {
   correctAnswer: string;
   points: number;
   explanation?: string;
+  questionType: QuestionType;
+  mediaAttachments?: MediaAttachment[]; // Up to 2 media files
+  timeLimit?: number; // Custom time limit in seconds (default 60)
 }
 
 export interface Round {
@@ -19,7 +30,7 @@ export interface Round {
   questions: Question[];
 }
 
-export type SlideType = 'home' | 'rounds' | 'question' | 'correct' | 'wrong' | 'complete' | 'editor';
+export type SlideType = 'home' | 'rounds' | 'question' | 'correct' | 'wrong' | 'complete' | 'editor' | 'round-complete';
 
 export interface QuizState {
   rounds: Round[];

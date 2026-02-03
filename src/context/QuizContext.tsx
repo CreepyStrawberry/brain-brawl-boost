@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { Question, Round, SlideType, QuizState } from '@/types/quiz';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import { Question, Round, SlideType, QuizState, QuestionType } from '@/types/quiz';
 
 interface QuizContextType extends QuizState {
   // Navigation
@@ -61,6 +61,8 @@ const defaultRounds: Round[] = [
         correctAnswer: 'C',
         points: 10,
         explanation: 'HTTPS is the correct standard for secure web communication.',
+        questionType: 'normal',
+        timeLimit: 60,
       },
       {
         id: '1-2',
@@ -73,6 +75,8 @@ const defaultRounds: Round[] = [
         ],
         correctAnswer: 'B',
         points: 10,
+        questionType: 'normal',
+        timeLimit: 60,
       },
     ],
   },
@@ -92,6 +96,8 @@ const defaultRounds: Round[] = [
         ],
         correctAnswer: 'C',
         points: 20,
+        questionType: 'normal',
+        timeLimit: 60,
       },
     ],
   },
@@ -160,10 +166,12 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAnswerRevealed(false);
     setSelectedAnswer(null);
     setIsCorrect(null);
-    setTimeRemaining(60);
+    // Use first question's time limit or default to 60
+    const firstQuestion = rounds[index]?.questions[0];
+    setTimeRemaining(firstQuestion?.timeLimit || 60);
     setTimerRunning(false);
     setCurrentSlide('question');
-  }, []);
+  }, [rounds]);
 
   const selectAnswer = useCallback((answer: string) => {
     if (answerRevealed || !currentQuestion) return;
@@ -189,75 +197,60 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const continueAfterFeedback = useCallback(() => {
     setShowCelebration(false);
     
-    // Move to next question or complete
+    // Move to next question or show round complete
     if (currentRound && currentQuestionIndex < currentRound.questions.length - 1) {
+      const nextQuestion = currentRound.questions[currentQuestionIndex + 1];
       setCurrentQuestionIndex(prev => prev + 1);
       setAnswerRevealed(false);
       setSelectedAnswer(null);
       setIsCorrect(null);
-      setTimeRemaining(60);
+      setTimeRemaining(nextQuestion?.timeLimit || 60);
       setTimerRunning(false);
       setCurrentSlide('question');
     } else {
-      // Check if there are more rounds
-      if (currentRoundIndex < rounds.length - 1) {
-        setCurrentRoundIndex(prev => prev + 1);
-        setCurrentQuestionIndex(0);
-        setAnswerRevealed(false);
-        setSelectedAnswer(null);
-        setIsCorrect(null);
-        setTimeRemaining(60);
-        setTimerRunning(false);
-        setCurrentSlide('question');
-      } else {
-        setCurrentSlide('complete');
-      }
+      // Round is complete - show round complete slide instead of auto-advancing
+      setCurrentSlide('round-complete');
     }
-  }, [currentRound, currentQuestionIndex, currentRoundIndex, rounds.length]);
+  }, [currentRound, currentQuestionIndex]);
 
   const nextQuestion = useCallback(() => {
     if (!currentRound) return;
     
     if (currentQuestionIndex < currentRound.questions.length - 1) {
+      const nextQ = currentRound.questions[currentQuestionIndex + 1];
       setCurrentQuestionIndex(prev => prev + 1);
       setAnswerRevealed(false);
       setSelectedAnswer(null);
       setIsCorrect(null);
       setShowCelebration(false);
-      setTimeRemaining(60);
-      setTimerRunning(false);
-    } else if (currentRoundIndex < rounds.length - 1) {
-      setCurrentRoundIndex(prev => prev + 1);
-      setCurrentQuestionIndex(0);
-      setAnswerRevealed(false);
-      setSelectedAnswer(null);
-      setIsCorrect(null);
-      setShowCelebration(false);
-      setTimeRemaining(60);
+      setTimeRemaining(nextQ?.timeLimit || 60);
       setTimerRunning(false);
     } else {
-      setCurrentSlide('complete');
+      // Show round complete slide
+      setCurrentSlide('round-complete');
     }
-  }, [currentRound, currentQuestionIndex, currentRoundIndex, rounds.length]);
+  }, [currentRound, currentQuestionIndex]);
 
   const previousQuestion = useCallback(() => {
     if (currentQuestionIndex > 0) {
+      const prevQ = rounds[currentRoundIndex]?.questions[currentQuestionIndex - 1];
       setCurrentQuestionIndex(prev => prev - 1);
       setAnswerRevealed(false);
       setSelectedAnswer(null);
       setIsCorrect(null);
       setShowCelebration(false);
-      setTimeRemaining(60);
+      setTimeRemaining(prevQ?.timeLimit || 60);
       setTimerRunning(false);
     } else if (currentRoundIndex > 0) {
       const prevRound = rounds[currentRoundIndex - 1];
+      const prevQ = prevRound.questions[prevRound.questions.length - 1];
       setCurrentRoundIndex(prev => prev - 1);
       setCurrentQuestionIndex(prevRound.questions.length - 1);
       setAnswerRevealed(false);
       setSelectedAnswer(null);
       setIsCorrect(null);
       setShowCelebration(false);
-      setTimeRemaining(60);
+      setTimeRemaining(prevQ?.timeLimit || 60);
       setTimerRunning(false);
     }
   }, [currentQuestionIndex, currentRoundIndex, rounds]);

@@ -5,6 +5,7 @@ import RoundSelectionSlide from './RoundSelectionSlide';
 import QuestionSlide from './QuestionSlide';
 import FeedbackSlide from './FeedbackSlide';
 import CompleteSlide from './CompleteSlide';
+import RoundCompleteSlide from './RoundCompleteSlide';
 import QuizEditor from './editor/QuizEditor';
 
 const QuizPresentation: React.FC = () => {
@@ -21,6 +22,8 @@ const QuizPresentation: React.FC = () => {
       return <FeedbackSlide type="correct" />;
     case 'wrong':
       return <FeedbackSlide type="wrong" />;
+    case 'round-complete':
+      return <RoundCompleteSlide />;
     case 'complete':
       return <CompleteSlide />;
     case 'editor':

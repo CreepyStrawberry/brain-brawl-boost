@@ -48,6 +48,8 @@ const QuizEditor: React.FC = () => {
       ],
       correctAnswer: 'A',
       points: 10,
+      questionType: 'normal',
+      timeLimit: 60,
     };
     setEditingQuestion({ roundIndex, questionIndex: -1, question: newQuestion });
   };

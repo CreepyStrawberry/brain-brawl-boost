@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuiz } from '@/context/QuizContext';
 import SlideLayout from './SlideLayout';
 import Timer from './Timer';
 import OptionButton from './OptionButton';
 import Confetti from './Confetti';
 import ScorePopup from './ScorePopup';
+import MediaDisplay from './MediaDisplay';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, RotateCcw, Home, LayoutGrid } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Home, LayoutGrid, Image, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const QuestionSlide: React.FC = () => {
@@ -29,6 +30,20 @@ const QuestionSlide: React.FC = () => {
     goToSlide,
   } = useQuiz();
 
+  const [showRevealedMedia, setShowRevealedMedia] = useState(false);
+
+  // Reset media state when question changes
+  useEffect(() => {
+    setShowRevealedMedia(false);
+  }, [currentQuestion?.id]);
+
+  // Show revealed media after wrong answer
+  useEffect(() => {
+    if (answerRevealed && isCorrect === false && currentQuestion?.questionType === 'media') {
+      setShowRevealedMedia(true);
+    }
+  }, [answerRevealed, isCorrect, currentQuestion]);
+
   if (!currentRound || !currentQuestion) {
     return (
       <SlideLayout>
@@ -45,15 +60,14 @@ const QuestionSlide: React.FC = () => {
     .reduce((sum, r) => sum + r.questions.length, 0) + currentQuestionIndex + 1;
   const totalQuestions = rounds.reduce((sum, r) => sum + r.questions.length, 0);
   const isLastQuestionInRound = currentQuestionIndex === totalQuestionsInRound - 1;
-  const isLastRound = currentRoundIndex === rounds.length - 1;
+  const isMediaQuestion = currentQuestion.questionType === 'media';
+  const hasMedia = isMediaQuestion && currentQuestion.mediaAttachments && currentQuestion.mediaAttachments.length > 0;
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
+      transition: { staggerChildren: 0.1 },
     },
   };
 
@@ -84,10 +98,24 @@ const QuestionSlide: React.FC = () => {
           variants={itemVariants}
         >
           <div className="cyber-border bg-card/50 px-4 py-2 lg:px-6 lg:py-3">
-            <h2 className="font-display text-lg uppercase tracking-wider text-primary lg:text-xl">
-              {currentRound.name}: Question {currentQuestionIndex + 1} of {totalQuestionsInRound}
-            </h2>
-            <p className="font-body text-sm text-muted-foreground">{currentRound.theme}</p>
+            <div className="flex items-center gap-2">
+              <h2 className="font-display text-lg uppercase tracking-wider text-primary lg:text-xl">
+                {currentRound.name}: Question {currentQuestionIndex + 1} of {totalQuestionsInRound}
+              </h2>
+              {isMediaQuestion && (
+                <span className="flex items-center gap-1 rounded bg-purple-500/20 px-2 py-0.5 text-xs font-bold text-purple-400">
+                  <Image className="h-3 w-3" />
+                  Media
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <p className="font-body text-sm text-muted-foreground">{currentRound.theme}</p>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {currentQuestion.timeLimit || 60}s
+              </span>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
@@ -109,6 +137,20 @@ const QuestionSlide: React.FC = () => {
         <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:gap-8">
           {/* Question and options */}
           <div className="flex-1">
+            {/* Media display for media questions */}
+            {hasMedia && (
+              <motion.div 
+                className="mb-6"
+                variants={itemVariants}
+              >
+                <MediaDisplay
+                  attachments={currentQuestion.mediaAttachments!}
+                  showRevealed={showRevealedMedia}
+                  answerRevealed={answerRevealed}
+                />
+              </motion.div>
+            )}
+
             {/* Question box */}
             <motion.div 
               className="cyber-border mb-6 bg-card/60 p-6 lg:mb-8 lg:p-8"
@@ -237,7 +279,7 @@ const QuestionSlide: React.FC = () => {
                 onClick={nextQuestion}
                 className="border-2 border-primary bg-primary/10 px-6 font-display uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
               >
-                {isLastRound && isLastQuestionInRound ? 'Finish' : 'Next'}
+                {isLastQuestionInRound ? 'Finish Round' : 'Next'}
                 <ChevronRight className="ml-2 h-5 w-5" />
               </Button>
             </motion.div>
