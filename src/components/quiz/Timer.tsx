@@ -5,17 +5,19 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 
 const Timer: React.FC = () => {
-  const { timeRemaining, timerRunning, startTimer, pauseTimer, resetTimer, setTimeRemaining } = useQuiz();
+  const { timeRemaining, timerRunning, startTimer, pauseTimer, resetTimer, setTimeRemaining, currentQuestion } = useQuiz();
   const beepPlayedRef = useRef(false);
   const hasAutoStarted = useRef(false);
+  const questionTimeLimit = currentQuestion?.timeLimit || 60;
 
-  // Auto-start timer on mount
+  // Auto-start timer on mount and reset when question changes
   useEffect(() => {
-    if (!hasAutoStarted.current) {
-      hasAutoStarted.current = true;
-      startTimer();
-    }
-  }, [startTimer]);
+    hasAutoStarted.current = true;
+    startTimer();
+    return () => {
+      hasAutoStarted.current = false;
+    };
+  }, [currentQuestion?.id, startTimer]);
 
   useEffect(() => {
     // Create beep audio
@@ -89,7 +91,7 @@ const Timer: React.FC = () => {
         <motion.div 
           className="absolute inset-0 rounded-full border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent"
           style={{ 
-            transform: `rotate(${(1 - timeRemaining / 60) * 360}deg)`,
+            transform: `rotate(${(1 - timeRemaining / questionTimeLimit) * 360}deg)`,
           }}
           transition={{ duration: 1, ease: 'linear' }}
         />
@@ -150,7 +152,7 @@ const Timer: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => resetTimer(60)}
+            onClick={() => resetTimer(questionTimeLimit)}
             className="border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
           >
             <RotateCcw className="h-4 w-4" />

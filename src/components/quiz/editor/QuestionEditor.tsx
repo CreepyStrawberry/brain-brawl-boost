@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuiz } from '@/context/QuizContext';
 import SlideLayout from '../SlideLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save, Trash2, Check } from 'lucide-react';
-import { Question } from '@/types/quiz';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Save, Trash2, Check, Image, Video, Music, X, Clock } from 'lucide-react';
+import { Question, QuestionType, MediaAttachment } from '@/types/quiz';
 
 interface QuestionEditorProps {
   question: Question;
@@ -32,11 +33,46 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   const [correctAnswer, setCorrectAnswer] = useState(question.correctAnswer);
   const [points, setPoints] = useState(question.points);
   const [explanation, setExplanation] = useState(question.explanation || '');
+  const [questionType, setQuestionType] = useState<QuestionType>(question.questionType || 'normal');
+  const [mediaAttachments, setMediaAttachments] = useState<MediaAttachment[]>(question.mediaAttachments || []);
+  const [timeLimit, setTimeLimit] = useState(question.timeLimit || 60);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleOptionChange = (index: number, text: string) => {
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], text };
     setOptions(newOptions);
+  };
+
+  const handleAddMedia = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    if (mediaAttachments.length >= 2) {
+      alert('Maximum 2 media files allowed per question');
+      return;
+    }
+
+    const file = files[0];
+    const url = URL.createObjectURL(file);
+    let type: 'image' | 'audio' | 'video' = 'image';
+    
+    if (file.type.startsWith('audio/')) type = 'audio';
+    else if (file.type.startsWith('video/')) type = 'video';
+    
+    const newAttachment: MediaAttachment = {
+      url,
+      type,
+      isBlurred: mediaAttachments.length === 0, // First image is blurred
+    };
+    
+    setMediaAttachments([...mediaAttachments, newAttachment]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemoveMedia = (index: number) => {
+    setMediaAttachments(mediaAttachments.filter((_, i) => i !== index));
   };
 
   const handleSave = () => {
@@ -47,6 +83,9 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
       correctAnswer,
       points,
       explanation: explanation || undefined,
+      questionType,
+      mediaAttachments: questionType === 'media' ? mediaAttachments : undefined,
+      timeLimit,
     };
 
     if (isNew) {
@@ -65,6 +104,14 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   };
 
   const isValid = questionText.trim() && options.every(o => o.text.trim());
+
+  const getMediaIcon = (type: 'image' | 'audio' | 'video') => {
+    switch (type) {
+      case 'audio': return <Music className="h-5 w-5" />;
+      case 'video': return <Video className="h-5 w-5" />;
+      default: return <Image className="h-5 w-5" />;
+    }
+  };
 
   return (
     <SlideLayout>
@@ -111,6 +158,123 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
         {/* Form - Scrollable */}
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-3xl space-y-6 pb-8">
+            {/* Question Type Selector */}
+            <div className="cyber-border bg-card/60 p-6">
+              <Label className="font-display text-sm uppercase tracking-wider text-foreground">
+                Question Type
+              </Label>
+              <Select value={questionType} onValueChange={(v) => setQuestionType(v as QuestionType)}>
+                <SelectTrigger className="mt-2 border-2 border-primary/30 bg-background/50">
+                  <SelectValue placeholder="Select question type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">Normal Question</SelectItem>
+                  <SelectItem value="media">Audio / Video / Image Question</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Time Limit */}
+            <div className="cyber-border bg-card/60 p-6">
+              <Label className="font-display text-sm uppercase tracking-wider text-foreground">
+                <Clock className="mr-2 inline h-4 w-4" />
+                Time Limit (seconds)
+              </Label>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                {[30, 45, 60, 90, 120].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setTimeLimit(value)}
+                    className={`rounded border-2 px-4 py-2 font-display font-bold transition-all ${
+                      timeLimit === value
+                        ? 'border-primary bg-primary/20 text-primary'
+                        : 'border-muted bg-muted/10 text-muted-foreground hover:border-primary hover:text-primary'
+                    }`}
+                  >
+                    {value}s
+                  </button>
+                ))}
+                <Input
+                  type="number"
+                  value={timeLimit}
+                  onChange={(e) => setTimeLimit(parseInt(e.target.value) || 60)}
+                  className="w-24 border-2 border-primary/30 bg-background/50 text-center font-display font-bold text-foreground"
+                  min={10}
+                  max={300}
+                />
+              </div>
+            </div>
+
+            {/* Media Attachments (only for media questions) */}
+            {questionType === 'media' && (
+              <div className="cyber-border bg-card/60 p-6">
+                <Label className="font-display text-sm uppercase tracking-wider text-foreground">
+                  Media Attachments (Max 2)
+                </Label>
+                <p className="mb-4 font-body text-sm text-muted-foreground">
+                  First media shows initially (blurred if image). Second shows after wrong answer.
+                </p>
+                
+                <div className="space-y-3">
+                  {mediaAttachments.map((media, index) => (
+                    <div key={index} className="flex items-center gap-3 rounded border-2 border-muted bg-muted/10 p-3">
+                      <div className={`flex h-10 w-10 items-center justify-center rounded ${
+                        media.type === 'image' ? 'bg-blue-500/20 text-blue-500' :
+                        media.type === 'audio' ? 'bg-purple-500/20 text-purple-500' :
+                        'bg-orange-500/20 text-orange-500'
+                      }`}>
+                        {getMediaIcon(media.type)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">
+                          {media.type.charAt(0).toUpperCase() + media.type.slice(1)} {index + 1}
+                          {index === 0 && media.type === 'image' && (
+                            <span className="ml-2 text-xs text-muted-foreground">(Shows blurred initially)</span>
+                          )}
+                          {index === 1 && (
+                            <span className="ml-2 text-xs text-muted-foreground">(Revealed after wrong answer)</span>
+                          )}
+                        </p>
+                        {media.type === 'image' && (
+                          <img src={media.url} alt={`Media ${index + 1}`} className="mt-2 h-20 w-auto rounded object-cover" />
+                        )}
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleRemoveMedia(index)}
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {mediaAttachments.length < 2 && (
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,audio/*,video/*"
+                        onChange={handleAddMedia}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-dashed border-muted-foreground/50 text-muted-foreground hover:border-primary hover:text-primary"
+                      >
+                        <Image className="mr-2 h-4 w-4" />
+                        Add Media File
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Question text */}
             <div className="cyber-border bg-card/60 p-6">
               <Label className="font-display text-sm uppercase tracking-wider text-foreground">
@@ -214,6 +378,16 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 Preview
               </h3>
               <div className="cyber-border bg-card/60 p-6">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className={`rounded px-2 py-1 text-xs font-bold ${
+                    questionType === 'media' ? 'bg-purple-500/20 text-purple-400' : 'bg-primary/20 text-primary'
+                  }`}>
+                    {questionType === 'media' ? 'Media Question' : 'Normal Question'}
+                  </span>
+                  <span className="rounded bg-muted/20 px-2 py-1 text-xs text-muted-foreground">
+                    {timeLimit}s
+                  </span>
+                </div>
                 <p className="mb-4 font-body text-lg text-foreground">
                   {questionText || 'Your question will appear here...'}
                 </p>
