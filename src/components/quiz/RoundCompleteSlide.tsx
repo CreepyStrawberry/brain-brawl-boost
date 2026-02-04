@@ -12,33 +12,34 @@ const RoundCompleteSlide: React.FC = () => {
     currentRoundIndex,
     currentRound,
     score,
-    correctAnswers,
     goToSlide,
+    goToNextRound,
     resetQuiz,
   } = useQuiz();
 
   const isLastRound = currentRoundIndex === rounds.length - 1;
-  const roundPoints = currentRound?.questions.reduce((sum, q) => sum + q.points, 0) || 0;
-
-  const handleNextRound = () => {
-    // This would need to be added to context, but for now we go to rounds
-    goToSlide('rounds');
-  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 },
+      transition: { 
+        duration: 0.5,
+        ease: [0.4, 0, 0.2, 1] as const,
+        staggerChildren: 0.12 
+      },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 30 },
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }
+      transition: { 
+        duration: 0.6, 
+        ease: [0.25, 0.46, 0.45, 0.94] as const 
+      }
     },
   };
 
@@ -57,11 +58,20 @@ const RoundCompleteSlide: React.FC = () => {
           className="mb-6"
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+          transition={{ 
+            type: 'spring', 
+            stiffness: 150, 
+            damping: 12,
+            duration: 0.8 
+          }}
         >
           <motion.div
             animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 0.5, repeat: 3, ease: 'easeInOut' }}
+            transition={{ 
+              duration: 0.6, 
+              repeat: 3, 
+              ease: [0.4, 0, 0.2, 1] as const 
+            }}
           >
             <Trophy className="h-24 w-24 text-accent" />
           </motion.div>
@@ -105,7 +115,11 @@ const RoundCompleteSlide: React.FC = () => {
           className="flex flex-wrap items-center justify-center gap-4"
           variants={itemVariants}
         >
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div 
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+          >
             <Button
               onClick={resetQuiz}
               variant="outline"
@@ -116,18 +130,26 @@ const RoundCompleteSlide: React.FC = () => {
             </Button>
           </motion.div>
           
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div 
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+          >
             <Button
               onClick={() => goToSlide('rounds')}
               className="border-2 border-accent bg-accent/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-accent hover:bg-accent hover:text-accent-foreground"
             >
               <LayoutGrid className="mr-2 h-5 w-5" />
-              Back to Round Selection
+              Back to Rounds
             </Button>
           </motion.div>
 
           {isLastRound ? (
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <motion.div 
+              whileHover={{ scale: 1.05 }} 
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+            >
               <Button
                 onClick={() => goToSlide('complete')}
                 className="border-2 border-success bg-success/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-success hover:bg-success hover:text-success-foreground"
@@ -137,12 +159,16 @@ const RoundCompleteSlide: React.FC = () => {
               </Button>
             </motion.div>
           ) : (
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <motion.div 
+              whileHover={{ scale: 1.05 }} 
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+            >
               <Button
-                onClick={handleNextRound}
+                onClick={goToNextRound}
                 className="border-2 border-primary bg-primary/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
               >
-                Select Next Round
+                Continue
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </motion.div>

@@ -31,6 +31,8 @@ const CompleteSlide: React.FC = () => {
     visible: {
       opacity: 1,
       transition: {
+        duration: 0.6,
+        ease: [0.4, 0, 0.2, 1] as const,
         staggerChildren: 0.15,
       },
     },
@@ -41,7 +43,10 @@ const CompleteSlide: React.FC = () => {
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const }
+      transition: { 
+        duration: 0.5, 
+        ease: [0.25, 0.46, 0.45, 0.94] as const 
+      }
     },
   };
 
@@ -141,7 +146,11 @@ const CompleteSlide: React.FC = () => {
           className="flex flex-wrap items-center justify-center gap-4"
           variants={itemVariants}
         >
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div 
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+          >
             <Button
               onClick={() => goToSlide('rounds')}
               variant="outline"
@@ -151,7 +160,11 @@ const CompleteSlide: React.FC = () => {
               Round Selection
             </Button>
           </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div 
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+          >
             <Button
               onClick={resetQuiz}
               className="border-2 border-primary bg-primary/10 px-10 py-6 font-display text-lg uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"

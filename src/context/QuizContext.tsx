@@ -5,6 +5,7 @@ interface QuizContextType extends QuizState {
   // Navigation
   goToSlide: (slide: SlideType) => void;
   selectRound: (index: number) => void;
+  goToNextRound: () => void;
   nextQuestion: () => void;
   previousQuestion: () => void;
   
@@ -255,6 +256,26 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [currentQuestionIndex, currentRoundIndex, rounds]);
 
+  const goToNextRound = useCallback(() => {
+    const nextRoundIndex = currentRoundIndex + 1;
+    if (nextRoundIndex < rounds.length) {
+      const nextRound = rounds[nextRoundIndex];
+      const firstQuestion = nextRound?.questions[0];
+      setCurrentRoundIndex(nextRoundIndex);
+      setCurrentQuestionIndex(0);
+      setAnswerRevealed(false);
+      setSelectedAnswer(null);
+      setIsCorrect(null);
+      setShowCelebration(false);
+      setTimeRemaining(firstQuestion?.timeLimit || 60);
+      setTimerRunning(false);
+      setCurrentSlide('question');
+    } else {
+      // No more rounds, go to complete
+      setCurrentSlide('complete');
+    }
+  }, [currentRoundIndex, rounds]);
+
   const startQuiz = useCallback(() => {
     setCurrentRoundIndex(0);
     setCurrentQuestionIndex(0);
@@ -391,6 +412,7 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         totalPoints,
         goToSlide,
         selectRound,
+        goToNextRound,
         selectAnswer,
         continueAfterFeedback,
         nextQuestion,
