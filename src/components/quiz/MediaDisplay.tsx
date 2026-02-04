@@ -1,25 +1,24 @@
 import React from 'react';
 import { MediaAttachment } from '@/types/quiz';
-import { Image, Video, Music, Eye, EyeOff } from 'lucide-react';
+import { Image, Video, Music } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface MediaDisplayProps {
   attachments: MediaAttachment[];
-  showRevealed: boolean;
-  answerRevealed: boolean;
+  showRevealedOnly?: boolean;
 }
 
-const MediaDisplay: React.FC<MediaDisplayProps> = ({ attachments, showRevealed, answerRevealed }) => {
+const MediaDisplay: React.FC<MediaDisplayProps> = ({ attachments, showRevealedOnly = false }) => {
   if (attachments.length === 0) return null;
 
   const primaryMedia = attachments[0];
   const revealedMedia = attachments[1];
   
-  // Show revealed media if wrong answer and second media exists
-  const currentMedia = showRevealed && revealedMedia ? revealedMedia : primaryMedia;
-  const isBlurred = !answerRevealed && primaryMedia.isBlurred && currentMedia === primaryMedia;
+  // If showRevealedOnly is true and we have a second image, show only that
+  // Otherwise show the primary media
+  const currentMedia = showRevealedOnly && revealedMedia ? revealedMedia : primaryMedia;
 
-  const renderMedia = (media: MediaAttachment, blurred: boolean) => {
+  const renderMedia = (media: MediaAttachment) => {
     switch (media.type) {
       case 'image':
         return (
@@ -27,25 +26,13 @@ const MediaDisplay: React.FC<MediaDisplayProps> = ({ attachments, showRevealed, 
             className="relative overflow-hidden rounded-lg"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] as const }}
           >
             <img
               src={media.url}
               alt="Question media"
-              className={`h-auto max-h-80 w-full object-contain transition-all duration-500 ${blurred ? 'blur-xl' : ''}`}
+              className="h-auto max-h-80 w-full object-contain"
             />
-            {blurred && (
-              <motion.div 
-                className="absolute inset-0 flex items-center justify-center bg-background/30"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <div className="flex items-center gap-2 rounded-lg bg-card/80 px-4 py-2 text-sm text-muted-foreground">
-                  <EyeOff className="h-4 w-4" />
-                  Image is blurred until answer
-                </div>
-              </motion.div>
-            )}
           </motion.div>
         );
       
@@ -54,7 +41,7 @@ const MediaDisplay: React.FC<MediaDisplayProps> = ({ attachments, showRevealed, 
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] as const }}
           >
             <video
               src={media.url}
@@ -72,7 +59,7 @@ const MediaDisplay: React.FC<MediaDisplayProps> = ({ attachments, showRevealed, 
             className="flex items-center gap-4 rounded-lg bg-card/60 p-6"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] as const }}
           >
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-purple-500/20">
               <Music className="h-8 w-8 text-purple-400" />
@@ -101,34 +88,19 @@ const MediaDisplay: React.FC<MediaDisplayProps> = ({ attachments, showRevealed, 
           {currentMedia.type === 'audio' && <Music className="h-4 w-4" />}
           <span className="capitalize">{currentMedia.type} Question</span>
         </div>
-        
-        {answerRevealed && revealedMedia && (
-          <div className="flex items-center gap-2 text-xs text-success">
-            <Eye className="h-3 w-3" />
-            Revealed
-          </div>
-        )}
       </div>
       
       <AnimatePresence mode="wait">
         <motion.div
-          key={showRevealed ? 'revealed' : 'initial'}
-          initial={{ opacity: 0, x: showRevealed ? 20 : 0 }}
+          key={showRevealedOnly ? 'revealed' : 'initial'}
+          initial={{ opacity: 0, x: showRevealedOnly ? 30 : 0 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: showRevealed ? -20 : 0 }}
-          transition={{ duration: 0.3 }}
+          exit={{ opacity: 0, x: showRevealedOnly ? -30 : 0 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] as const }}
         >
-          {renderMedia(currentMedia, isBlurred)}
+          {renderMedia(currentMedia)}
         </motion.div>
       </AnimatePresence>
-      
-      {attachments.length === 2 && !answerRevealed && (
-        <p className="mt-3 text-center text-xs text-muted-foreground">
-          {primaryMedia.type === 'image' && primaryMedia.isBlurred 
-            ? 'Image will be revealed after answering' 
-            : 'Second media will show after wrong answer'}
-        </p>
-      )}
     </div>
   );
 };

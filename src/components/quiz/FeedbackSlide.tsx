@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useQuiz } from '@/context/QuizContext';
 import SlideLayout from './SlideLayout';
 import Confetti from './Confetti';
+import MediaDisplay from './MediaDisplay';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, ArrowRight, RotateCcw, LayoutGrid } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -23,13 +24,19 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
 
   const isCorrect = type === 'correct';
   const isLastQuestionInRound = currentRound && currentQuestionIndex === currentRound.questions.length - 1;
+  
+  // Check if this is a media question with a second (revealed) image
+  const isMediaQuestion = currentQuestion?.questionType === 'media';
+  const hasRevealedMedia = isMediaQuestion && 
+    currentQuestion?.mediaAttachments && 
+    currentQuestion.mediaAttachments.length >= 2;
 
   // Auto-advance after correct answer
   useEffect(() => {
     if (isCorrect) {
       const timer = setTimeout(() => {
         continueAfterFeedback();
-      }, 2500);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [isCorrect, continueAfterFeedback]);
@@ -41,17 +48,22 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
+        duration: 0.5,
+        ease: [0.4, 0, 0.2, 1] as const,
+        staggerChildren: 0.12,
       },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 25 },
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }
+      transition: { 
+        duration: 0.5, 
+        ease: [0.25, 0.46, 0.45, 0.94] as const 
+      }
     },
   };
 
@@ -72,16 +84,21 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
               className="mb-6"
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+              transition={{ 
+                type: 'spring', 
+                stiffness: 150, 
+                damping: 12,
+                duration: 0.8 
+              }}
             >
               <motion.div
                 animate={{ 
                   scale: [1, 1.1, 1],
                 }}
                 transition={{ 
-                  duration: 0.5, 
+                  duration: 0.6, 
                   repeat: 3,
-                  ease: 'easeInOut' 
+                  ease: [0.4, 0, 0.2, 1] as const 
                 }}
               >
                 <CheckCircle className="h-32 w-32 text-success" />
@@ -141,7 +158,11 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
               Moving to next question...
             </motion.p>
 
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <motion.div 
+              whileHover={{ scale: 1.05 }} 
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+            >
               <Button
                 onClick={continueAfterFeedback}
                 className="border-2 border-success bg-success/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-success hover:bg-success hover:text-success-foreground"
@@ -162,8 +183,8 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
                 x: [0, -10, 10, -10, 10, 0],
               }}
               transition={{ 
-                scale: { type: 'spring', stiffness: 200, damping: 10 },
-                x: { duration: 0.5, delay: 0.3 }
+                scale: { type: 'spring', stiffness: 150, damping: 12 },
+                x: { duration: 0.6, delay: 0.4 }
               }}
             >
               <XCircle className="h-32 w-32 text-destructive" />
@@ -181,7 +202,7 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
             </motion.h1>
             
             <motion.p 
-              className="mb-8 text-center font-body text-xl text-muted-foreground"
+              className="mb-6 text-center font-body text-xl text-muted-foreground"
               variants={itemVariants}
             >
               The correct answer was:
@@ -189,13 +210,29 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
 
             {/* Show correct answer */}
             <motion.div 
-              className="mb-10 rounded-lg border-2 border-success bg-success/10 px-8 py-6"
+              className="mb-6 rounded-lg border-2 border-success bg-success/10 px-8 py-6"
               variants={itemVariants}
             >
               <span className="font-display text-2xl font-bold text-success">
                 [{currentQuestion.correctAnswer}] {currentQuestion.options.find(o => o.label === currentQuestion.correctAnswer)?.text}
               </span>
             </motion.div>
+
+            {/* Show revealed media for wrong answers (second/clear image) */}
+            {hasRevealedMedia && (
+              <motion.div 
+                className="mb-8 w-full max-w-2xl"
+                variants={itemVariants}
+              >
+                <p className="mb-3 text-center font-body text-sm text-muted-foreground">
+                  Revealed Image:
+                </p>
+                <MediaDisplay 
+                  attachments={currentQuestion.mediaAttachments!}
+                  showRevealedOnly={true}
+                />
+              </motion.div>
+            )}
 
             {/* Explanation if available */}
             {currentQuestion.explanation && (
@@ -212,7 +249,11 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
               className="flex flex-wrap items-center justify-center gap-4"
               variants={itemVariants}
             >
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div 
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+              >
                 <Button
                   onClick={resetQuestion}
                   variant="outline"
@@ -223,7 +264,11 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
                 </Button>
               </motion.div>
               {isLastQuestionInRound && (
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <motion.div 
+                  whileHover={{ scale: 1.05 }} 
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+                >
                   <Button
                     onClick={() => goToSlide('rounds')}
                     variant="outline"
@@ -234,7 +279,11 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
                   </Button>
                 </motion.div>
               )}
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div 
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+              >
                 <Button
                   onClick={continueAfterFeedback}
                   className="border-2 border-primary bg-primary/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"

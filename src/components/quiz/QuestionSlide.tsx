@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useQuiz } from '@/context/QuizContext';
 import SlideLayout from './SlideLayout';
 import Timer from './Timer';
@@ -30,20 +30,6 @@ const QuestionSlide: React.FC = () => {
     goToSlide,
   } = useQuiz();
 
-  const [showRevealedMedia, setShowRevealedMedia] = useState(false);
-
-  // Reset media state when question changes
-  useEffect(() => {
-    setShowRevealedMedia(false);
-  }, [currentQuestion?.id]);
-
-  // Show revealed media after wrong answer
-  useEffect(() => {
-    if (answerRevealed && isCorrect === false && currentQuestion?.questionType === 'media') {
-      setShowRevealedMedia(true);
-    }
-  }, [answerRevealed, isCorrect, currentQuestion]);
-
   if (!currentRound || !currentQuestion) {
     return (
       <SlideLayout>
@@ -67,16 +53,23 @@ const QuestionSlide: React.FC = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 },
+      transition: { 
+        duration: 0.5,
+        ease: [0.4, 0, 0.2, 1] as const,
+        staggerChildren: 0.1 
+      },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 25 },
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }
+      transition: { 
+        duration: 0.5, 
+        ease: [0.25, 0.46, 0.45, 0.94] as const 
+      }
     },
   };
 
@@ -145,8 +138,6 @@ const QuestionSlide: React.FC = () => {
               >
                 <MediaDisplay
                   attachments={currentQuestion.mediaAttachments!}
-                  showRevealed={showRevealedMedia}
-                  answerRevealed={answerRevealed}
                 />
               </motion.div>
             )}
