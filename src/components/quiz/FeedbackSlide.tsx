@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useQuiz } from '@/context/QuizContext';
+import { useQuiz, useQuizStatic } from '@/context/QuizContext';
 import SlideLayout from './SlideLayout';
 import Confetti from './Confetti';
 import MediaDisplay from './MediaDisplay';
@@ -12,10 +12,11 @@ interface FeedbackSlideProps {
 }
 
 const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
+  // Use static snapshot to prevent flash of next question's answer during exit animation
+  const { question: frozenQuestion, roundLength, questionIndex: frozenQuestionIndex } = useQuizStatic();
+  
   const { 
     currentRound,
-    currentQuestionIndex,
-    currentQuestion, 
     continueAfterFeedback, 
     resetQuestion,
     goToSlide,
@@ -23,13 +24,13 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
   } = useQuiz();
 
   const isCorrect = type === 'correct';
-  const isLastQuestionInRound = currentRound && currentQuestionIndex === currentRound.questions.length - 1;
+  const isLastQuestionInRound = roundLength > 0 && frozenQuestionIndex === roundLength - 1;
   
   // Check if this is a media question with a second (revealed) image
-  const isMediaQuestion = currentQuestion?.questionType === 'media';
+  const isMediaQuestion = frozenQuestion?.questionType === 'media';
   const hasRevealedMedia = isMediaQuestion && 
-    currentQuestion?.mediaAttachments && 
-    currentQuestion.mediaAttachments.length >= 2;
+    frozenQuestion?.mediaAttachments && 
+    frozenQuestion.mediaAttachments.length >= 2;
 
   // Auto-advance after correct answer
   useEffect(() => {
@@ -41,7 +42,7 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
     }
   }, [isCorrect, continueAfterFeedback]);
 
-  if (!currentQuestion) return null;
+  if (!frozenQuestion) return null;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -120,7 +121,7 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
               className="mb-8 text-center font-display text-2xl text-primary"
               variants={itemVariants}
             >
-              +{currentQuestion.points} points
+              +{frozenQuestion.points} points
             </motion.p>
 
             {/* Score display */}
@@ -140,12 +141,12 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
             </motion.div>
 
             {/* Explanation if available */}
-            {currentQuestion.explanation && (
+            {frozenQuestion.explanation && (
               <motion.div 
                 className="mb-8 max-w-2xl border-l-4 border-success bg-card/60 p-4"
                 variants={itemVariants}
               >
-                <p className="font-body text-foreground">{currentQuestion.explanation}</p>
+                <p className="font-body text-foreground">{frozenQuestion.explanation}</p>
               </motion.div>
             )}
 
@@ -214,7 +215,7 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
               variants={itemVariants}
             >
               <span className="font-display text-2xl font-bold text-success">
-                [{currentQuestion.correctAnswer}] {currentQuestion.options.find(o => o.label === currentQuestion.correctAnswer)?.text}
+                [{frozenQuestion.correctAnswer}] {frozenQuestion.options.find(o => o.label === frozenQuestion.correctAnswer)?.text}
               </span>
             </motion.div>
 
@@ -228,19 +229,19 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
                   Revealed Image:
                 </p>
                 <MediaDisplay 
-                  attachments={currentQuestion.mediaAttachments!}
+                  attachments={frozenQuestion.mediaAttachments!}
                   showRevealedOnly={true}
                 />
               </motion.div>
             )}
 
             {/* Explanation if available */}
-            {currentQuestion.explanation && (
+            {frozenQuestion.explanation && (
               <motion.div 
                 className="mb-8 max-w-2xl border-l-4 border-primary bg-card/60 p-4"
                 variants={itemVariants}
               >
-                <p className="font-body text-foreground">{currentQuestion.explanation}</p>
+                <p className="font-body text-foreground">{frozenQuestion.explanation}</p>
               </motion.div>
             )}
 
