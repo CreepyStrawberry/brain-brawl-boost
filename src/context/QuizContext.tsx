@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import { useRef, useEffect } from 'react';
 import { Question, Round, SlideType, QuizState, QuestionType } from '@/types/quiz';
 
 interface QuizContextType extends QuizState {
@@ -132,6 +133,31 @@ export const useQuiz = () => {
     throw new Error('useQuiz must be used within a QuizProvider');
   }
   return context;
+};
+
+// Hook that returns a frozen snapshot of question data - prevents flash during slide transitions
+export const useQuizStatic = () => {
+  const { currentQuestion, currentQuestionIndex, currentRound } = useQuiz();
+  
+  // Store frozen values in refs that only update when question actually changes
+  const frozenRef = useRef({
+    question: currentQuestion,
+    questionIndex: currentQuestionIndex,
+    roundLength: currentRound?.questions.length || 0,
+  });
+  
+  // Only update frozen values when the question ID changes (new question loaded)
+  useEffect(() => {
+    if (currentQuestion?.id !== frozenRef.current.question?.id) {
+      frozenRef.current = {
+        question: currentQuestion,
+        questionIndex: currentQuestionIndex,
+        roundLength: currentRound?.questions.length || 0,
+      };
+    }
+  }, [currentQuestion, currentQuestionIndex, currentRound]);
+  
+  return frozenRef.current;
 };
 
 export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
