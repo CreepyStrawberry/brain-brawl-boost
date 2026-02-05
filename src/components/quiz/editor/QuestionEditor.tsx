@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+ import React, { useState, useRef, useEffect } from 'react';
 import { useQuiz } from '@/context/QuizContext';
 import SlideLayout from '../SlideLayout';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Save, Trash2, Check, Image, Video, Music, X, Clock } from 'lucide-react';
 import { Question, QuestionType, MediaAttachment } from '@/types/quiz';
+ import { storeMediaFile, getMediaFile, deleteMediaFile } from '@/lib/mediaStorage';
 
 interface QuestionEditorProps {
   question: Question;
@@ -36,8 +37,32 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   const [questionType, setQuestionType] = useState<QuestionType>(question.questionType || 'normal');
   const [mediaAttachments, setMediaAttachments] = useState<MediaAttachment[]>(question.mediaAttachments || []);
   const [timeLimit, setTimeLimit] = useState(question.timeLimit || 60);
+   const [mediaPreviewUrls, setMediaPreviewUrls] = useState<Record<string, string>>({});
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+ 
+   // Load media preview URLs from IndexedDB on mount
+   useEffect(() => {
+     const loadMediaPreviews = async () => {
+       const urls: Record<string, string> = {};
+       for (const attachment of mediaAttachments) {
+         if (attachment.url && !attachment.url.startsWith('blob:')) {
+           const media = await getMediaFile(attachment.url);
+           if (media) {
+             urls[attachment.url] = media.dataUrl;
+           }
+         } else if (attachment.url.startsWith('blob:')) {
+           // Blob URLs are temporary, keep them as-is for preview
+           urls[attachment.url] = attachment.url;
+         }
+       }
+       setMediaPreviewUrls(urls);
+     };
+     
+     if (mediaAttachments.length > 0) {
+       loadMediaPreviews();
+     }
+   }, []);
 
   const handleOptionChange = (index: number, text: string) => {
     const newOptions = [...options];
@@ -45,7 +70,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     setOptions(newOptions);
   };
 
-  const handleAddMedia = (e: React.ChangeEvent<HTMLInputElement>) => {
+   const handleAddMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
@@ -55,14 +80,18 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     }
 
     const file = files[0];
-    const url = URL.createObjectURL(file);
-    let type: 'image' | 'audio' | 'video' = 'image';
-    
-    if (file.type.startsWith('audio/')) type = 'audio';
-    else if (file.type.startsWith('video/')) type = 'video';
-    
+     
+     // Store file in IndexedDB and get persistent ID
+     const { id, type } = await storeMediaFile(file);
+     
+     // Get the data URL for preview
+     const media = await getMediaFile(id);
+     if (media) {
+       setMediaPreviewUrls(prev => ({ ...prev, [id]: media.dataUrl }));
+     }
+     
     const newAttachment: MediaAttachment = {
-      url,
+       url: id, // Store the IndexedDB ID instead of blob URL
       type,
       isBlurred: mediaAttachments.length === 0, // First image is blurred
     };
@@ -71,7 +100,16 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleRemoveMedia = (index: number) => {
+   const handleRemoveMedia = async (index: number) => {
+     const attachment = mediaAttachments[index];
+     if (attachment) {
+       await deleteMediaFile(attachment.url);
+       setMediaPreviewUrls(prev => {
+         const newUrls = { ...prev };
+         delete newUrls[attachment.url];
+         return newUrls;
+       });
+     }
     setMediaAttachments(mediaAttachments.filter((_, i) => i !== index));
   };
 
@@ -237,7 +275,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                           )}
                         </p>
                         {media.type === 'image' && (
-                          <img src={media.url} alt={`Media ${index + 1}`} className="mt-2 h-20 w-auto rounded object-cover" />
+                           <img src={mediaPreviewUrls[media.url] || media.url} alt={`Media ${index + 1}`} className="mt-2 h-20 w-auto rounded object-cover" />
                         )}
                       </div>
                       <Button
