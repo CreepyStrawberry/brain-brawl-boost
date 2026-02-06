@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuiz } from '@/context/QuizContext';
+import { useAudio } from '@/context/AudioContext';
 import SlideLayout from './SlideLayout';
 import { Button } from '@/components/ui/button';
 import { Home, Play } from 'lucide-react';
@@ -7,6 +8,17 @@ import { motion } from 'framer-motion';
 
 const RoundSelectionSlide: React.FC = () => {
   const { rounds, selectRound, resetQuiz } = useQuiz();
+  const { playClick, playSelect } = useAudio();
+
+  const handleSelectRound = (index: number) => {
+    playSelect();
+    selectRound(index);
+  };
+
+  const handleHome = () => {
+    playClick();
+    resetQuiz();
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -52,7 +64,7 @@ const RoundSelectionSlide: React.FC = () => {
           {rounds.map((round, index) => (
             <motion.button
               key={round.id}
-              onClick={() => selectRound(index)}
+              onClick={() => handleSelectRound(index)}
               className="group cyber-border flex w-full items-center justify-between bg-card/60 px-4 py-3 text-left transition-all hover:bg-card/80 hover:border-primary"
               variants={itemVariants}
               whileHover={{ scale: 1.02, x: 5 }}
@@ -87,7 +99,7 @@ const RoundSelectionSlide: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={resetQuiz}
+              onClick={handleHome}
               className="border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
             >
               <Home className="mr-2 h-4 w-4" />
@@ -100,7 +112,7 @@ const RoundSelectionSlide: React.FC = () => {
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
           >
             <Button
-              onClick={() => selectRound(0)}
+              onClick={() => handleSelectRound(0)}
               size="sm"
               className="border border-primary bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground"
             >

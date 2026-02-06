@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useQuiz, useQuizStatic } from '@/context/QuizContext';
+import { useAudio } from '@/context/AudioContext';
 import SlideLayout from './SlideLayout';
 import Confetti from './Confetti';
 import MediaDisplay from './MediaDisplay';
@@ -22,6 +23,8 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
     goToSlide,
     score 
   } = useQuiz();
+  
+  const { playClick, playCorrect, playIncorrect } = useAudio();
 
   const isCorrect = type === 'correct';
   const isLastQuestionInRound = roundLength > 0 && frozenQuestionIndex === roundLength - 1;
@@ -32,6 +35,15 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
     frozenQuestion?.mediaAttachments && 
     frozenQuestion.mediaAttachments.length >= 2;
 
+  // Play sound effect on mount
+  useEffect(() => {
+    if (isCorrect) {
+      playCorrect();
+    } else {
+      playIncorrect();
+    }
+  }, [isCorrect, playCorrect, playIncorrect]);
+
   // Auto-advance after correct answer
   useEffect(() => {
     if (isCorrect) {
@@ -41,6 +53,23 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
       return () => clearTimeout(timer);
     }
   }, [isCorrect, continueAfterFeedback]);
+
+  const handleContinue = () => {
+    playClick();
+    continueAfterFeedback();
+  };
+
+  const handleTryAgain = () => {
+    playClick();
+    resetQuestion();
+  };
+
+  const handleGoToRounds = () => {
+    playClick();
+    goToSlide('rounds');
+  };
+
+  if (!frozenQuestion) return null;
 
   if (!frozenQuestion) return null;
 
@@ -165,7 +194,7 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
             >
               <Button
-                onClick={continueAfterFeedback}
+                onClick={handleContinue}
                 className="border-2 border-success bg-success/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-success hover:bg-success hover:text-success-foreground"
               >
                 Continue
@@ -256,7 +285,7 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
                 transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
               >
                 <Button
-                  onClick={resetQuestion}
+                  onClick={handleTryAgain}
                   variant="outline"
                   className="border-2 border-muted-foreground/30 px-6 py-6 font-display uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary"
                 >
@@ -271,7 +300,7 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
                   transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
                 >
                   <Button
-                    onClick={() => goToSlide('rounds')}
+                    onClick={handleGoToRounds}
                     variant="outline"
                     className="border-2 border-accent/50 px-6 py-6 font-display uppercase tracking-wider text-accent hover:border-accent hover:bg-accent/10"
                   >
@@ -286,7 +315,7 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
                 transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
               >
                 <Button
-                  onClick={continueAfterFeedback}
+                  onClick={handleContinue}
                   className="border-2 border-primary bg-primary/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
                 >
                   Continue

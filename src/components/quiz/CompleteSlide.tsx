@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQuiz } from '@/context/QuizContext';
+import { useAudio } from '@/context/AudioContext';
 import SlideLayout from './SlideLayout';
 import Confetti from './Confetti';
 import { Button } from '@/components/ui/button';
@@ -8,14 +9,26 @@ import { motion } from 'framer-motion';
 
 const CompleteSlide: React.FC = () => {
   const { score, correctAnswers, totalQuestions, totalPoints, resetQuiz, goToSlide } = useQuiz();
+  const { playClick, playRoundComplete, stopMusic } = useAudio();
   const [showConfetti, setShowConfetti] = useState(true);
 
   const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
 
   useEffect(() => {
+    playRoundComplete();
     const timer = setTimeout(() => setShowConfetti(false), 4000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [playRoundComplete]);
+
+  const handleGoToRounds = () => {
+    playClick();
+    goToSlide('rounds');
+  };
+
+  const handleTryAgain = () => {
+    playClick();
+    resetQuiz();
+  };
 
   const getMessage = () => {
     if (percentage >= 90) return { text: 'Outstanding!', color: 'text-success' };
@@ -152,7 +165,7 @@ const CompleteSlide: React.FC = () => {
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
           >
             <Button
-              onClick={() => goToSlide('rounds')}
+              onClick={handleGoToRounds}
               variant="outline"
               className="border-2 border-muted-foreground/30 px-8 py-6 font-display text-lg uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary"
             >
@@ -166,7 +179,7 @@ const CompleteSlide: React.FC = () => {
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
           >
             <Button
-              onClick={resetQuiz}
+              onClick={handleTryAgain}
               className="border-2 border-primary bg-primary/10 px-10 py-6 font-display text-lg uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
             >
               <RotateCcw className="mr-3 h-5 w-5" />

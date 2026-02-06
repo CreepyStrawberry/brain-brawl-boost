@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuiz } from '@/context/QuizContext';
+import { useAudio } from '@/context/AudioContext';
 import SlideLayout from './SlideLayout';
 import Confetti from './Confetti';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,34 @@ const RoundCompleteSlide: React.FC = () => {
     resetQuiz,
   } = useQuiz();
 
+  const { playClick, playRoundComplete } = useAudio();
+
+  // Play round complete sound on mount
+  useEffect(() => {
+    playRoundComplete();
+  }, [playRoundComplete]);
+
   const isLastRound = currentRoundIndex === rounds.length - 1;
+
+  const handleExit = () => {
+    playClick();
+    resetQuiz();
+  };
+
+  const handleBackToRounds = () => {
+    playClick();
+    goToSlide('rounds');
+  };
+
+  const handleContinue = () => {
+    playClick();
+    goToNextRound();
+  };
+
+  const handleFinishQuiz = () => {
+    playClick();
+    goToSlide('complete');
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -121,7 +149,7 @@ const RoundCompleteSlide: React.FC = () => {
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
           >
             <Button
-              onClick={resetQuiz}
+              onClick={handleExit}
               variant="outline"
               className="border-2 border-muted-foreground/30 px-6 py-6 font-display uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary"
             >
@@ -136,7 +164,7 @@ const RoundCompleteSlide: React.FC = () => {
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
           >
             <Button
-              onClick={() => goToSlide('rounds')}
+              onClick={handleBackToRounds}
               className="border-2 border-accent bg-accent/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-accent hover:bg-accent hover:text-accent-foreground"
             >
               <LayoutGrid className="mr-2 h-5 w-5" />
@@ -151,7 +179,7 @@ const RoundCompleteSlide: React.FC = () => {
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
             >
               <Button
-                onClick={() => goToSlide('complete')}
+                onClick={handleFinishQuiz}
                 className="border-2 border-success bg-success/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-success hover:bg-success hover:text-success-foreground"
               >
                 Finish Quiz
@@ -165,7 +193,7 @@ const RoundCompleteSlide: React.FC = () => {
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
             >
               <Button
-                onClick={goToNextRound}
+                onClick={handleContinue}
                 className="border-2 border-primary bg-primary/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
               >
                 Continue
