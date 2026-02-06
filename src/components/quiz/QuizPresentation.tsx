@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useQuiz } from '@/context/QuizContext';
+import { useAudio } from '@/context/AudioContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import HomeSlide from './HomeSlide';
 import RoundSelectionSlide from './RoundSelectionSlide';
@@ -31,6 +32,20 @@ const pageTransition = {
 
 const QuizPresentation: React.FC = () => {
   const { currentSlide } = useQuiz();
+  const { playTransition } = useAudio();
+  const prevSlideRef = useRef<string | null>(null);
+
+  // Play transition sound when slide changes (except for feedback slides)
+  useEffect(() => {
+    if (prevSlideRef.current !== null && prevSlideRef.current !== currentSlide) {
+      // Only play transition for major slide changes
+      const skipTransitionSound = ['correct', 'wrong'].includes(currentSlide);
+      if (!skipTransitionSound) {
+        playTransition();
+      }
+    }
+    prevSlideRef.current = currentSlide;
+  }, [currentSlide, playTransition]);
 
   const renderSlide = () => {
     switch (currentSlide) {

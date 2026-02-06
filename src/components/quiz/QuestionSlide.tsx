@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuiz } from '@/context/QuizContext';
+import { useAudio } from '@/context/AudioContext';
 import SlideLayout from './SlideLayout';
 import Timer from './Timer';
 import OptionButton from './OptionButton';
@@ -29,6 +30,38 @@ const QuestionSlide: React.FC = () => {
     resetQuiz,
     goToSlide,
   } = useQuiz();
+  
+  const { playClick, playSelect } = useAudio();
+
+  const handleSelectAnswer = (label: string) => {
+    playSelect();
+    selectAnswer(label);
+  };
+
+  const handleNextQuestion = () => {
+    playClick();
+    nextQuestion();
+  };
+
+  const handlePreviousQuestion = () => {
+    playClick();
+    previousQuestion();
+  };
+
+  const handleResetQuestion = () => {
+    playClick();
+    resetQuestion();
+  };
+
+  const handleResetQuiz = () => {
+    playClick();
+    resetQuiz();
+  };
+
+  const handleGoToRounds = () => {
+    playClick();
+    goToSlide('rounds');
+  };
 
   if (!currentRound || !currentQuestion) {
     return (
@@ -174,7 +207,7 @@ const QuestionSlide: React.FC = () => {
                       isCorrect={isCorrect}
                       isRevealed={answerRevealed}
                       correctAnswer={currentQuestion.correctAnswer}
-                      onClick={() => selectAnswer(option.label)}
+                      onClick={() => handleSelectAnswer(option.label)}
                       disabled={answerRevealed}
                     />
                   </motion.div>
@@ -218,7 +251,7 @@ const QuestionSlide: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={resetQuiz}
+                onClick={handleResetQuiz}
                 className="border-muted-foreground/30 text-muted-foreground hover:border-destructive hover:text-destructive"
               >
                 <Home className="mr-2 h-4 w-4" />
@@ -229,7 +262,7 @@ const QuestionSlide: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => goToSlide('rounds')}
+                onClick={handleGoToRounds}
                 className="border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
               >
                 <LayoutGrid className="mr-2 h-4 w-4" />
@@ -240,7 +273,7 @@ const QuestionSlide: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={resetQuestion}
+                onClick={handleResetQuestion}
                 className="border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
               >
                 <RotateCcw className="h-4 w-4" />
@@ -258,7 +291,7 @@ const QuestionSlide: React.FC = () => {
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
                 variant="outline"
-                onClick={previousQuestion}
+                onClick={handlePreviousQuestion}
                 disabled={currentRoundIndex === 0 && currentQuestionIndex === 0}
                 className="border-muted-foreground/30 px-4 text-muted-foreground hover:border-primary hover:text-primary disabled:opacity-30"
               >
@@ -267,7 +300,7 @@ const QuestionSlide: React.FC = () => {
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
-                onClick={nextQuestion}
+                onClick={handleNextQuestion}
                 className="border-2 border-primary bg-primary/10 px-6 font-display uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground"
               >
                 {isLastQuestionInRound ? 'Finish Round' : 'Next'}

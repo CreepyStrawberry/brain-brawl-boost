@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuiz } from '@/context/QuizContext';
+import { useAudio } from '@/context/AudioContext';
 import SlideLayout from './SlideLayout';
 import { Button } from '@/components/ui/button';
 import { Play, BookOpen, Trophy, Settings } from 'lucide-react';
@@ -7,6 +8,18 @@ import { motion } from 'framer-motion';
 
 const HomeSlide: React.FC = () => {
   const { startQuiz, toggleEditMode, rounds, totalQuestions, totalPoints } = useQuiz();
+  const { playClick, startMusic } = useAudio();
+
+  const handleStartQuiz = () => {
+    playClick();
+    startMusic();
+    startQuiz();
+  };
+
+  const handleEditQuiz = () => {
+    playClick();
+    toggleEditMode();
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -96,7 +109,7 @@ const HomeSlide: React.FC = () => {
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
           >
             <Button
-              onClick={startQuiz}
+              onClick={handleStartQuiz}
               className="group relative overflow-hidden border-2 border-primary bg-primary/10 px-12 py-8 font-display text-xl uppercase tracking-wider text-primary transition-all hover:bg-primary hover:text-primary-foreground"
             >
               <span className="relative z-10 flex items-center gap-3">
@@ -112,7 +125,7 @@ const HomeSlide: React.FC = () => {
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
           >
             <Button
-              onClick={toggleEditMode}
+              onClick={handleEditQuiz}
               variant="outline"
               className="border-2 border-muted-foreground/30 px-8 py-8 font-display text-lg uppercase tracking-wider text-muted-foreground hover:border-accent hover:text-accent"
             >
