@@ -1,13 +1,29 @@
 import React, { useEffect, useRef } from 'react';
 import { useQuiz } from '@/context/QuizContext';
+import { useAudio } from '@/context/AudioContext';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 
 const Timer: React.FC = () => {
-  const { timeRemaining, timerRunning, startTimer, pauseTimer, resetTimer, setTimeRemaining, currentQuestion } = useQuiz();
+  const { 
+    timeRemaining, 
+    timerRunning, 
+    startTimer, 
+    pauseTimer, 
+    resetTimer, 
+    setTimeRemaining, 
+    currentQuestion,
+    handleTimeout,
+    answerRevealed
+  } = useQuiz();
+  
+  const { isMuted, masterVolume, sfxVolume } = useAudio();
+  
   const beepPlayedRef = useRef(false);
   const hasAutoStarted = useRef(false);
+  const tickingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const questionTimeLimit = currentQuestion?.timeLimit || 60;
 
   // Auto-start timer on mount and reset when question changes
@@ -19,41 +35,52 @@ const Timer: React.FC = () => {
     };
   }, [currentQuestion?.id, startTimer]);
 
+  // Ticking sound effect for last 10 seconds
   useEffect(() => {
-    // Create beep audio
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    const playBeep = () => {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+    const playTick = (intensity: number) => {
+      if (isMuted) return;
+      
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
       
       oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      gainNode.connect(ctx.destination);
       
-      oscillator.frequency.value = 800;
+      // Higher pitch and louder as time decreases
+      const baseFreq = 600 + (10 - intensity) * 50;
+      oscillator.frequency.value = baseFreq;
       oscillator.type = 'sine';
       
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      const volume = masterVolume * sfxVolume * (0.1 + (10 - intensity) * 0.03);
+      gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
       
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.08);
     };
-
-    if (timeRemaining === 10 && timerRunning && !beepPlayedRef.current) {
-      playBeep();
-      beepPlayedRef.current = true;
+    
+    if (timerRunning && timeRemaining <= 10 && timeRemaining > 0 && !answerRevealed) {
+      playTick(timeRemaining);
     }
-
-    if (timeRemaining > 10) {
-      beepPlayedRef.current = false;
-    }
-
+    
     return () => {
-      // Cleanup if needed
+      if (tickingIntervalRef.current) {
+        clearInterval(tickingIntervalRef.current);
+        tickingIntervalRef.current = null;
+      }
     };
-  }, [timeRemaining, timerRunning]);
+  }, [timeRemaining, timerRunning, isMuted, masterVolume, sfxVolume, answerRevealed]);
 
+  // Timer countdown logic
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     
@@ -61,14 +88,15 @@ const Timer: React.FC = () => {
       interval = setInterval(() => {
         setTimeRemaining(timeRemaining - 1);
       }, 1000);
-    } else if (timeRemaining === 0) {
-      pauseTimer();
+    } else if (timeRemaining === 0 && timerRunning && !answerRevealed) {
+      // Time ran out - trigger timeout
+      handleTimeout();
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [timerRunning, timeRemaining, setTimeRemaining, pauseTimer]);
+  }, [timerRunning, timeRemaining, setTimeRemaining, handleTimeout, answerRevealed]);
 
   const isCritical = timeRemaining <= 10 && timeRemaining > 0;
   const isUrgent = timeRemaining <= 5 && timeRemaining > 0;

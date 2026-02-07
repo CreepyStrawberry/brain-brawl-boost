@@ -17,6 +17,7 @@ export interface Question {
   options: QuizOption[];
   correctAnswer: string;
   points: number;
+  negativePoints?: number; // Optional negative marking for wrong answers
   explanation?: string;
   questionType: QuestionType;
   mediaAttachments?: MediaAttachment[]; // Up to 2 media files
@@ -30,7 +31,7 @@ export interface Round {
   questions: Question[];
 }
 
-export type SlideType = 'home' | 'rounds' | 'question' | 'correct' | 'wrong' | 'complete' | 'editor' | 'round-complete';
+export type SlideType = 'home' | 'rounds' | 'questions' | 'question' | 'correct' | 'wrong' | 'timeout' | 'complete' | 'editor' | 'round-complete';
 
 export interface QuizState {
   rounds: Round[];

@@ -8,7 +8,7 @@ import Confetti from './Confetti';
 import ScorePopup from './ScorePopup';
 import MediaDisplay from './MediaDisplay';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, RotateCcw, Home, LayoutGrid, Image, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Home, LayoutGrid, Image, Clock, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const QuestionSlide: React.FC = () => {
@@ -22,7 +22,6 @@ const QuestionSlide: React.FC = () => {
     answerRevealed,
     isCorrect,
     showCelebration,
-    score,
     selectAnswer,
     nextQuestion,
     previousQuestion,
@@ -58,14 +57,14 @@ const QuestionSlide: React.FC = () => {
     resetQuiz();
   };
 
-  const handleGoToRounds = () => {
+  const handleGoToQuestions = () => {
     playClick();
-    goToSlide('rounds');
+    goToSlide('questions');
   };
 
   if (!currentRound || !currentQuestion) {
     return (
-      <SlideLayout>
+      <SlideLayout showAudioControls={false}>
         <div className="flex flex-1 items-center justify-center">
           <p className="text-muted-foreground">No questions available</p>
         </div>
@@ -74,10 +73,6 @@ const QuestionSlide: React.FC = () => {
   }
 
   const totalQuestionsInRound = currentRound.questions.length;
-  const overallQuestionNumber = rounds
-    .slice(0, currentRoundIndex)
-    .reduce((sum, r) => sum + r.questions.length, 0) + currentQuestionIndex + 1;
-  const totalQuestions = rounds.reduce((sum, r) => sum + r.questions.length, 0);
   const isLastQuestionInRound = currentQuestionIndex === totalQuestionsInRound - 1;
   const isMediaQuestion = currentQuestion.questionType === 'media';
   const hasMedia = isMediaQuestion && currentQuestion.mediaAttachments && currentQuestion.mediaAttachments.length > 0;
@@ -107,7 +102,7 @@ const QuestionSlide: React.FC = () => {
   };
 
   return (
-    <SlideLayout>
+    <SlideLayout showAudioControls={false}>
       <Confetti show={showCelebration} />
       <ScorePopup points={currentQuestion.points} show={showCelebration} />
       
@@ -144,18 +139,17 @@ const QuestionSlide: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            <motion.div 
-              className="border-2 border-muted bg-muted/20 px-4 py-2"
-              animate={{ scale: showCelebration ? [1, 1.1, 1] : 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              <span className="font-body text-sm text-muted-foreground">Score: </span>
-              <span className="font-display text-xl font-bold text-primary">{score}</span>
-            </motion.div>
+          {/* Points display - showing what can be earned/lost */}
+          <div className="flex items-center gap-3">
             <div className="border-2 border-accent bg-accent/10 px-4 py-2">
               <span className="font-display text-lg font-bold text-accent">+{currentQuestion.points} pts</span>
             </div>
+            {currentQuestion.negativePoints && currentQuestion.negativePoints > 0 && (
+              <div className="flex items-center gap-1 border-2 border-destructive bg-destructive/10 px-4 py-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <span className="font-display text-lg font-bold text-destructive">-{currentQuestion.negativePoints}</span>
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -262,11 +256,11 @@ const QuestionSlide: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleGoToRounds}
+                onClick={handleGoToQuestions}
                 className="border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
               >
                 <LayoutGrid className="mr-2 h-4 w-4" />
-                Rounds
+                Questions
               </Button>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -283,7 +277,7 @@ const QuestionSlide: React.FC = () => {
 
           {/* Progress indicator */}
           <div className="font-body text-sm text-muted-foreground">
-            Overall: {overallQuestionNumber} / {totalQuestions}
+            Question {currentQuestionIndex + 1} of {totalQuestionsInRound}
           </div>
 
           {/* Navigation controls */}

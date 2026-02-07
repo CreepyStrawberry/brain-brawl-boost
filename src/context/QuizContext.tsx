@@ -6,6 +6,7 @@ interface QuizContextType extends QuizState {
   // Navigation
   goToSlide: (slide: SlideType) => void;
   selectRound: (index: number) => void;
+  selectQuestion: (roundIndex: number, questionIndex: number) => void;
   goToNextRound: () => void;
   nextQuestion: () => void;
   previousQuestion: () => void;
@@ -16,6 +17,7 @@ interface QuizContextType extends QuizState {
   resetQuestion: () => void;
   startQuiz: () => void;
   resetQuiz: () => void;
+  handleTimeout: () => void;
   
   // Timer
   startTimer: () => void;
@@ -41,6 +43,10 @@ interface QuizContextType extends QuizState {
   currentQuestion: Question | null;
   totalQuestions: number;
   totalPoints: number;
+  
+  // Tracking answered questions
+  answeredQuestions: Set<string>;
+  lastQuestionResult: { points: number; isCorrect: boolean; negativePoints?: number } | null;
 }
 
 const STORAGE_KEY = 'quiz-rounds-data';
@@ -174,6 +180,8 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [timerRunning, setTimerRunning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
+  const [lastQuestionResult, setLastQuestionResult] = useState<{ points: number; isCorrect: boolean; negativePoints?: number } | null>(null);
 
   // Computed values
   const currentRound = rounds[currentRoundIndex] || null;
@@ -193,9 +201,19 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAnswerRevealed(false);
     setSelectedAnswer(null);
     setIsCorrect(null);
-    // Use first question's time limit or default to 60
-    const firstQuestion = rounds[index]?.questions[0];
-    setTimeRemaining(firstQuestion?.timeLimit || 60);
+    setLastQuestionResult(null);
+    setCurrentSlide('questions'); // Go to question selection instead of directly to question
+  }, []);
+
+  const selectQuestion = useCallback((roundIndex: number, questionIndex: number) => {
+    setCurrentRoundIndex(roundIndex);
+    setCurrentQuestionIndex(questionIndex);
+    setAnswerRevealed(false);
+    setSelectedAnswer(null);
+    setIsCorrect(null);
+    setLastQuestionResult(null);
+    const question = rounds[roundIndex]?.questions[questionIndex];
+    setTimeRemaining(question?.timeLimit || 60);
     setTimerRunning(false);
     setCurrentSlide('question');
   }, [rounds]);
@@ -209,20 +227,58 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAnswerRevealed(true);
     setTimerRunning(false);
     
+    // Mark question as answered
+    const questionKey = `${currentRoundIndex}-${currentQuestionIndex}`;
+    setAnsweredQuestions(prev => new Set(prev).add(questionKey));
+    
     if (correct) {
       setScore(prev => prev + currentQuestion.points);
       setCorrectAnswers(prev => prev + 1);
       setShowCelebration(true);
+      setLastQuestionResult({ points: currentQuestion.points, isCorrect: true });
+    } else {
+      // Apply negative marking if configured
+      const negativePoints = currentQuestion.negativePoints || 0;
+      if (negativePoints > 0) {
+        setScore(prev => Math.max(0, prev - negativePoints));
+      }
+      setLastQuestionResult({ 
+        points: 0, 
+        isCorrect: false, 
+        negativePoints: negativePoints > 0 ? negativePoints : undefined 
+      });
     }
     
     // Show feedback screen after a brief delay
     setTimeout(() => {
       setCurrentSlide(correct ? 'correct' : 'wrong');
     }, 500);
+  }, [answerRevealed, currentQuestion, currentRoundIndex, currentQuestionIndex]);
+
+  const handleTimeout = useCallback(() => {
+    if (answerRevealed || !currentQuestion) return;
+    
+    setAnswerRevealed(true);
+    setTimerRunning(false);
+    setIsCorrect(false);
+    
+    // Apply negative marking for timeout if configured
+    const negativePoints = currentQuestion.negativePoints || 0;
+    if (negativePoints > 0) {
+      setScore(prev => Math.max(0, prev - negativePoints));
+    }
+    setLastQuestionResult({ 
+      points: 0, 
+      isCorrect: false, 
+      negativePoints: negativePoints > 0 ? negativePoints : undefined 
+    });
+    
+    setCurrentSlide('timeout');
   }, [answerRevealed, currentQuestion]);
 
   const continueAfterFeedback = useCallback(() => {
     setShowCelebration(false);
+    setLastQuestionResult(null);
     
     // Move to next question or show round complete
     if (currentRound && currentQuestionIndex < currentRound.questions.length - 1) {
@@ -312,6 +368,8 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsCorrect(null);
     setTimeRemaining(60);
     setTimerRunning(false);
+    setAnsweredQuestions(new Set());
+    setLastQuestionResult(null);
     setCurrentSlide('rounds');
   }, []);
 
@@ -325,6 +383,8 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsCorrect(null);
     setTimeRemaining(60);
     setTimerRunning(false);
+    setAnsweredQuestions(new Set());
+    setLastQuestionResult(null);
     setCurrentSlide('home');
   }, []);
 
@@ -436,10 +496,14 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         currentQuestion,
         totalQuestions,
         totalPoints,
+        answeredQuestions,
+        lastQuestionResult,
         goToSlide,
         selectRound,
+        selectQuestion,
         goToNextRound,
         selectAnswer,
+        handleTimeout,
         continueAfterFeedback,
         nextQuestion,
         previousQuestion,

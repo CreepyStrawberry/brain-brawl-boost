@@ -3,7 +3,7 @@ import { useQuiz } from '@/context/QuizContext';
 import { useAudio } from '@/context/AudioContext';
 import SlideLayout from './SlideLayout';
 import { Button } from '@/components/ui/button';
-import { Home, Play } from 'lucide-react';
+import { Home, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const RoundSelectionSlide: React.FC = () => {
@@ -45,7 +45,7 @@ const RoundSelectionSlide: React.FC = () => {
   };
 
   return (
-    <SlideLayout>
+    <SlideLayout showAudioControls={false}>
       <motion.div 
         className="flex flex-1 flex-col items-center justify-center px-4 py-6"
         variants={containerVariants}
@@ -57,6 +57,9 @@ const RoundSelectionSlide: React.FC = () => {
           <h1 className="cyber-text-glow font-display text-2xl font-bold uppercase text-primary">
             Select Round
           </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Choose a round to view its questions
+          </p>
         </motion.div>
 
         {/* Compact rounds list */}
@@ -80,17 +83,17 @@ const RoundSelectionSlide: React.FC = () => {
                     {round.name}
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    {round.theme} • {round.questions.length} Q
+                    {round.theme} • {round.questions.length} Questions
                   </p>
                 </div>
               </div>
-              <Play className="h-4 w-4 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
+              <ChevronRight className="h-4 w-4 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
             </motion.button>
           ))}
         </div>
 
         {/* Action buttons */}
-        <motion.div className="mt-6 flex gap-3" variants={itemVariants}>
+        <motion.div className="mt-6" variants={itemVariants}>
           <motion.div 
             whileHover={{ scale: 1.05 }} 
             whileTap={{ scale: 0.95 }}
@@ -104,20 +107,6 @@ const RoundSelectionSlide: React.FC = () => {
             >
               <Home className="mr-2 h-4 w-4" />
               Home
-            </Button>
-          </motion.div>
-          <motion.div 
-            whileHover={{ scale: 1.05 }} 
-            whileTap={{ scale: 0.95 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
-          >
-            <Button
-              onClick={() => handleSelectRound(0)}
-              size="sm"
-              className="border border-primary bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              <Play className="mr-2 h-4 w-4" />
-              Play All
             </Button>
           </motion.div>
         </motion.div>
