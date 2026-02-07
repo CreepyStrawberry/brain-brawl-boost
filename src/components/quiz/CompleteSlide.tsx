@@ -64,7 +64,7 @@ const CompleteSlide: React.FC = () => {
   };
 
   return (
-    <SlideLayout>
+    <SlideLayout showAudioControls={false}>
       <Confetti show={showConfetti && percentage >= 50} />
       
       <motion.div 

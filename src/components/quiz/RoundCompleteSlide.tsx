@@ -72,7 +72,7 @@ const RoundCompleteSlide: React.FC = () => {
   };
 
   return (
-    <SlideLayout>
+    <SlideLayout showAudioControls={false}>
       <Confetti show={true} />
       
       <motion.div 

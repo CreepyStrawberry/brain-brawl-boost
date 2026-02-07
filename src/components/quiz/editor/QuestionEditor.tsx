@@ -37,6 +37,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   const [questionType, setQuestionType] = useState<QuestionType>(question.questionType || 'normal');
   const [mediaAttachments, setMediaAttachments] = useState<MediaAttachment[]>(question.mediaAttachments || []);
   const [timeLimit, setTimeLimit] = useState(question.timeLimit || 60);
+  const [negativePoints, setNegativePoints] = useState(question.negativePoints || 0);
    const [mediaPreviewUrls, setMediaPreviewUrls] = useState<Record<string, string>>({});
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -120,6 +121,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
       options,
       correctAnswer,
       points,
+      negativePoints: negativePoints > 0 ? negativePoints : undefined,
       explanation: explanation || undefined,
       questionType,
       mediaAttachments: questionType === 'media' ? mediaAttachments : undefined,
@@ -367,9 +369,9 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
             {/* Points */}
             <div className="cyber-border bg-card/60 p-6">
               <Label className="font-display text-sm uppercase tracking-wider text-foreground">
-                Points
+                Points for Correct Answer
               </Label>
-              <div className="mt-3 flex items-center gap-3">
+              <div className="mt-3 flex flex-wrap items-center gap-3">
                 {[5, 10, 15, 20, 25, 50].map((value) => (
                   <button
                     key={value}
@@ -381,7 +383,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                         : 'border-muted bg-muted/10 text-muted-foreground hover:border-primary hover:text-primary'
                     }`}
                   >
-                    {value}
+                    +{value}
                   </button>
                 ))}
                 <Input
@@ -390,6 +392,41 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                   onChange={(e) => setPoints(parseInt(e.target.value) || 10)}
                   className="w-24 border-2 border-primary/30 bg-background/50 text-center font-display font-bold text-foreground"
                   min={1}
+                />
+              </div>
+            </div>
+
+            {/* Negative Points (Optional) */}
+            <div className="cyber-border bg-card/60 p-6">
+              <Label className="font-display text-sm uppercase tracking-wider text-foreground">
+                Negative Marking (Optional)
+              </Label>
+              <p className="mb-3 font-body text-sm text-muted-foreground">
+                Deduct points for wrong answers. Set to 0 to disable.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                {[0, 2, 5, 10].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setNegativePoints(value)}
+                    className={`rounded border-2 px-4 py-2 font-display font-bold transition-all ${
+                      negativePoints === value
+                        ? value === 0 
+                          ? 'border-muted bg-muted/20 text-muted-foreground'
+                          : 'border-destructive bg-destructive/20 text-destructive'
+                        : 'border-muted bg-muted/10 text-muted-foreground hover:border-destructive hover:text-destructive'
+                    }`}
+                  >
+                    {value === 0 ? 'None' : `-${value}`}
+                  </button>
+                ))}
+                <Input
+                  type="number"
+                  value={negativePoints}
+                  onChange={(e) => setNegativePoints(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-24 border-2 border-destructive/30 bg-background/50 text-center font-display font-bold text-foreground"
+                  min={0}
                 />
               </div>
             </div>

@@ -4,10 +4,12 @@ import { useAudio } from '@/context/AudioContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import HomeSlide from './HomeSlide';
 import RoundSelectionSlide from './RoundSelectionSlide';
+import QuestionSelectionSlide from './QuestionSelectionSlide';
 import QuestionSlide from './QuestionSlide';
 import FeedbackSlide from './FeedbackSlide';
 import CompleteSlide from './CompleteSlide';
 import RoundCompleteSlide from './RoundCompleteSlide';
+import TimeoutSlide from './TimeoutSlide';
 import QuizEditor from './editor/QuizEditor';
 
 const pageTransition = {
@@ -39,7 +41,7 @@ const QuizPresentation: React.FC = () => {
   useEffect(() => {
     if (prevSlideRef.current !== null && prevSlideRef.current !== currentSlide) {
       // Only play transition for major slide changes
-      const skipTransitionSound = ['correct', 'wrong'].includes(currentSlide);
+      const skipTransitionSound = ['correct', 'wrong', 'timeout'].includes(currentSlide);
       if (!skipTransitionSound) {
         playTransition();
       }
@@ -53,12 +55,16 @@ const QuizPresentation: React.FC = () => {
         return <HomeSlide />;
       case 'rounds':
         return <RoundSelectionSlide />;
+      case 'questions':
+        return <QuestionSelectionSlide />;
       case 'question':
         return <QuestionSlide />;
       case 'correct':
         return <FeedbackSlide type="correct" />;
       case 'wrong':
         return <FeedbackSlide type="wrong" />;
+      case 'timeout':
+        return <TimeoutSlide />;
       case 'round-complete':
         return <RoundCompleteSlide />;
       case 'complete':

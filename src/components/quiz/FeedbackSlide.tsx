@@ -5,7 +5,7 @@ import SlideLayout from './SlideLayout';
 import Confetti from './Confetti';
 import MediaDisplay from './MediaDisplay';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, ArrowRight, RotateCcw, LayoutGrid } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowRight, RotateCcw, LayoutGrid, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface FeedbackSlideProps {
@@ -21,7 +21,7 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
     continueAfterFeedback, 
     resetQuestion,
     goToSlide,
-    score 
+    lastQuestionResult
   } = useQuiz();
   
   const { playClick, playCorrect, playIncorrect } = useAudio();
@@ -64,12 +64,10 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
     resetQuestion();
   };
 
-  const handleGoToRounds = () => {
+  const handleGoToQuestions = () => {
     playClick();
-    goToSlide('rounds');
+    goToSlide('questions');
   };
-
-  if (!frozenQuestion) return null;
 
   if (!frozenQuestion) return null;
 
@@ -98,7 +96,7 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
   };
 
   return (
-    <SlideLayout>
+    <SlideLayout showAudioControls={false}>
       <Confetti show={isCorrect} />
       
       <motion.div 
@@ -146,26 +144,18 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
               Correct!
             </motion.h1>
             
-            <motion.p 
-              className="mb-8 text-center font-display text-2xl text-primary"
-              variants={itemVariants}
-            >
-              +{frozenQuestion.points} points
-            </motion.p>
-
-            {/* Score display */}
+            {/* Points earned */}
             <motion.div 
               className="mb-10 rounded-lg border-2 border-success bg-success/10 px-8 py-4"
               variants={itemVariants}
             >
-              <span className="font-body text-lg text-muted-foreground">Total Score: </span>
               <motion.span 
-                className="font-display text-3xl font-bold text-success"
+                className="font-display text-4xl font-bold text-success"
                 initial={{ scale: 1.5 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 200 }}
               >
-                {score}
+                +{lastQuestionResult?.points || frozenQuestion.points} points
               </motion.span>
             </motion.div>
 
@@ -230,6 +220,19 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
             >
               Wrong!
             </motion.h1>
+
+            {/* Show negative points if applicable */}
+            {lastQuestionResult?.negativePoints && lastQuestionResult.negativePoints > 0 && (
+              <motion.div 
+                className="mb-4 flex items-center gap-2 rounded-lg border-2 border-destructive bg-destructive/10 px-6 py-3"
+                variants={itemVariants}
+              >
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <span className="font-display text-2xl font-bold text-destructive">
+                  -{lastQuestionResult.negativePoints} points
+                </span>
+              </motion.div>
+            )}
             
             <motion.p 
               className="mb-6 text-center font-body text-xl text-muted-foreground"
@@ -293,22 +296,20 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
                   Try Again
                 </Button>
               </motion.div>
-              {isLastQuestionInRound && (
-                <motion.div 
-                  whileHover={{ scale: 1.05 }} 
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+              <motion.div 
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+              >
+                <Button
+                  onClick={handleGoToQuestions}
+                  variant="outline"
+                  className="border-2 border-accent/50 px-6 py-6 font-display uppercase tracking-wider text-accent hover:border-accent hover:bg-accent/10"
                 >
-                  <Button
-                    onClick={handleGoToRounds}
-                    variant="outline"
-                    className="border-2 border-accent/50 px-6 py-6 font-display uppercase tracking-wider text-accent hover:border-accent hover:bg-accent/10"
-                  >
-                    <LayoutGrid className="mr-2 h-5 w-5" />
-                    Rounds
-                  </Button>
-                </motion.div>
-              )}
+                  <LayoutGrid className="mr-2 h-5 w-5" />
+                  Questions
+                </Button>
+              </motion.div>
               <motion.div 
                 whileHover={{ scale: 1.05 }} 
                 whileTap={{ scale: 0.95 }}

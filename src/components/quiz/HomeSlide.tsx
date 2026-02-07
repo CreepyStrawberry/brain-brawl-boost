@@ -2,21 +2,14 @@ import React from 'react';
 import { useQuiz } from '@/context/QuizContext';
 import { useAudio } from '@/context/AudioContext';
 import SlideLayout from './SlideLayout';
+import HomeSoundControls from './HomeSoundControls';
 import { Button } from '@/components/ui/button';
-import { Play, BookOpen, Trophy, Settings, Volume2, VolumeX, Music } from 'lucide-react';
+import { Play, BookOpen, Trophy, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const HomeSlide: React.FC = () => {
   const { startQuiz, toggleEditMode, rounds, totalQuestions, totalPoints } = useQuiz();
-  const { 
-    playClick, 
-    startMusic, 
-    isMuted, 
-    toggleMute, 
-    openSettings,
-    isMusicPlaying,
-    toggleMusic
-  } = useAudio();
+  const { playClick, startMusic } = useAudio();
 
   const handleStartQuiz = () => {
     playClick();
@@ -27,35 +20,6 @@ const HomeSlide: React.FC = () => {
   const handleEditQuiz = () => {
     playClick();
     toggleEditMode();
-  };
-
-  const handleToggleMute = () => {
-    toggleMute();
-    if (isMuted) {
-      // Will be unmuted, play a click to confirm
-      setTimeout(() => {
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 800;
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.1);
-      }, 50);
-    }
-  };
-
-  const handleToggleMusic = () => {
-    playClick();
-    toggleMusic();
-  };
-
-  const handleOpenSettings = () => {
-    playClick();
-    openSettings();
   };
 
   const containerVariants = {
@@ -84,6 +48,9 @@ const HomeSlide: React.FC = () => {
 
   return (
     <SlideLayout>
+      {/* Sound controls - only visible on home page */}
+      <HomeSoundControls />
+      
       <motion.div 
         className="flex flex-1 flex-col items-center justify-center px-6 py-12"
         variants={containerVariants}
@@ -135,57 +102,6 @@ const HomeSlide: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Audio Controls - Prominent on Home Page */}
-        <motion.div 
-          className="mb-8 flex items-center gap-3 rounded-lg border-2 border-primary/30 bg-card/60 px-6 py-4"
-          variants={itemVariants}
-        >
-          <span className="font-display text-sm uppercase tracking-wider text-muted-foreground">Audio:</span>
-          
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleToggleMute}
-              className={`border-2 ${
-                isMuted 
-                  ? 'border-destructive/50 text-destructive hover:border-destructive' 
-                  : 'border-success/50 text-success hover:border-success'
-              }`}
-            >
-              {isMuted ? <VolumeX className="mr-2 h-4 w-4" /> : <Volume2 className="mr-2 h-4 w-4" />}
-              {isMuted ? 'Muted' : 'Sound On'}
-            </Button>
-          </motion.div>
-          
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleToggleMusic}
-              className={`border-2 ${
-                isMusicPlaying 
-                  ? 'border-accent/50 text-accent hover:border-accent' 
-                  : 'border-muted-foreground/30 text-muted-foreground hover:border-accent'
-              }`}
-            >
-              <Music className="mr-2 h-4 w-4" />
-              {isMusicPlaying ? 'Music On' : 'Music Off'}
-            </Button>
-          </motion.div>
-          
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleOpenSettings}
-              className="text-muted-foreground hover:text-primary"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          </motion.div>
-        </motion.div>
-
         {/* Action buttons */}
         <motion.div 
           className="flex flex-col gap-4 sm:flex-row"
@@ -228,7 +144,7 @@ const HomeSlide: React.FC = () => {
           className="mt-12 text-center font-body text-sm text-muted-foreground/60"
           variants={itemVariants}
         >
-          60 seconds per question • Instant feedback • Click buttons to hear sounds!
+          Custom time per question • Instant feedback • Optional negative marking
         </motion.p>
       </motion.div>
     </SlideLayout>
