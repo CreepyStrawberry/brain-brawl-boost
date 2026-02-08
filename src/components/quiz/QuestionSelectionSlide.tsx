@@ -77,7 +77,7 @@ const QuestionSelectionSlide: React.FC = () => {
         </motion.div>
 
         {/* Question List */}
-        <div className="w-full max-w-2xl space-y-2 overflow-hidden">
+        <div className="w-full max-w-2xl space-y-2 px-1">
           {currentRound.questions.map((question, index) => {
             const isAnswered = answeredQuestions.has(`${currentRoundIndex}-${index}`);
             
