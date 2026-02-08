@@ -179,17 +179,36 @@ const FeedbackSlide: React.FC<FeedbackSlideProps> = ({ type }) => {
             </motion.p>
 
             <motion.div 
-              whileHover={{ scale: 1.05 }} 
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+              className="flex flex-wrap items-center justify-center gap-4"
+              variants={itemVariants}
             >
-              <Button
-                onClick={handleContinue}
-                className="border-2 border-success bg-success/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-success hover:bg-success hover:text-success-foreground"
+              <motion.div 
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
               >
-                Continue
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+                <Button
+                  onClick={handleGoToQuestions}
+                  variant="outline"
+                  className="border-2 border-accent/50 px-6 py-6 font-display uppercase tracking-wider text-accent hover:border-accent hover:bg-accent/10"
+                >
+                  <LayoutGrid className="mr-2 h-5 w-5" />
+                  Questions
+                </Button>
+              </motion.div>
+              <motion.div 
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] as const }}
+              >
+                <Button
+                  onClick={handleContinue}
+                  className="border-2 border-success bg-success/10 px-8 py-6 font-display text-lg uppercase tracking-wider text-success hover:bg-success hover:text-success-foreground"
+                >
+                  Continue
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </motion.div>
             </motion.div>
           </>
         ) : (
